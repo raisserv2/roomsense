@@ -1,0 +1,11 @@
+# Secrets: never commit
+.env
+*.env
+
+# Data: managed by DVC later, never by Git directly
+data/
+
+# Python junk
+__pycache__/
+*.pyc
+.venv/

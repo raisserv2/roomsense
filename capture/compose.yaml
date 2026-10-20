@@ -1,0 +1,11 @@
+services:
+  capture:
+    build: .
+    container_name: roomsense-capture
+    restart: unless-stopped
+    user: "1000:1000"
+    env_file: .env
+    ports:
+      - "127.0.0.1:8100:8100"
+    volumes:
+      - ../data/raw:/data/raw
