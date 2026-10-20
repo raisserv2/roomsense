@@ -1,0 +1,4 @@
+[core]
+    remote = seagate
+['remote "seagate"']
+    url = /mnt/photos/dvc-store

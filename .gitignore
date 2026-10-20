@@ -3,7 +3,9 @@
 *.env
 
 # Data: managed by DVC later, never by Git directly
-data/
+data/*
+!data/*.dvc
+!data/.gitignore
 
 # Python junk
 __pycache__/
