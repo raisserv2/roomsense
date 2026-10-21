@@ -1,0 +1,169 @@
+<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RoomSense review</title>
+<style>
+:root{--bg:#111518;--panel:#1a2026;--line:#2c353d;--fg:#e8edf1;--muted:#9aa7b2;--accent:#4c8dff;--sel:#4c8dff;--cur:#ffd24a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:17px/1.45 system-ui,sans-serif}
+.wrap{max-width:1300px;margin:0 auto;padding:14px 16px 60px}
+h1{font-size:26px;margin:0 0 8px} h2{font-size:19px;margin:0 0 8px}
+a{color:var(--accent)}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
+select,button{font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--fg)}
+button{cursor:pointer} button:disabled{opacity:.4;cursor:not-allowed}
+.danger{background:#5a1f1d;border-color:#7d2b28} .primary{background:#1f3d73;border-color:#2e5aa8}
+.muted{color:var(--muted);font-size:15px}
+#strip{width:100%;height:90px;background:var(--panel);border-radius:10px;display:block;cursor:pointer}
+.main{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;margin-top:10px}
+@media(max-width:900px){.main{grid-template-columns:1fr}}
+#preview{width:100%;border-radius:10px;background:#000;aspect-ratio:4/3;object-fit:contain;display:block}
+#cap b{color:var(--fg)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:16px}
+.th{position:relative;border:3px solid transparent;border-radius:8px;overflow:hidden;cursor:pointer;background:#000}
+.th img{width:100%;display:block;aspect-ratio:4/3;object-fit:cover}
+.th span{position:absolute;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);font-size:13px;padding:2px 6px}
+.th.in{border-color:var(--sel)} .th.cur{border-color:var(--cur)} .th.spike span{color:var(--cur)}
+.trash-item{display:flex;justify-content:space-between;gap:8px;align-items:center;border-top:1px solid var(--line);padding:8px 0;font-size:15px}
+kbd{background:#2a323a;border-radius:4px;padding:1px 6px;font-size:13px}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#263240;padding:12px 16px;border-radius:10px;display:none;max-width:90vw;font-size:16px}
+</style></head><body><div class="wrap">
+<h1>RoomSense review</h1>
+<div class="bar"><select id="sess" aria-label="Session"></select><span id="info" class="muted"></span><a href="./">&larr; Capture</a></div>
+<canvas id="strip" aria-label="Activity strip"></canvas>
+<div class="muted">Orange bars: how much changed since the previous frame (tall = movement, like walking out). Blue line: brightness. Click to jump.</div>
+<div class="main">
+  <div>
+    <img id="preview" alt="Selected frame">
+    <div id="cap" class="muted" style="margin-top:6px"></div>
+    <div class="bar">
+      <button id="prev">&#9664; Prev</button><button id="next">Next &#9654;</button>
+      <button id="mstart">Mark start [</button><button id="mend">Mark end ]</button><button id="clear">Clear range</button>
+    </div>
+    <div class="muted"><kbd>&larr;</kbd> <kbd>&rarr;</kbd> move &middot; <kbd>Shift</kbd>+arrow jumps 10 &middot; <kbd>[</kbd> <kbd>]</kbd> mark a range &middot; Shift-click a thumbnail to select up to it</div>
+  </div>
+  <div class="panel">
+    <h2>Fix this session</h2>
+    <div id="range">No range selected.</div>
+    <div class="bar"><select id="newlabel" aria-label="New label"></select><button class="primary" id="relabel">Relabel range</button></div>
+    <div class="bar"><select id="newlight" aria-label="New lighting"></select><button class="primary" id="relight">Change lighting of range</button></div>
+    <div class="bar"><button class="danger" id="t-range">Trash range</button></div>
+    <div class="bar"><button class="danger" id="t-after">Trash this frame and everything after</button></div>
+    <div class="bar"><button class="danger" id="t-before">Trash everything before this frame</button></div>
+    <p class="muted">Trash can be undone: frames move to data/trash, and every change is written to curation_log.csv.</p>
+    <h2 style="margin-top:14px">Trash</h2><div id="trash" class="muted">Empty.</div>
+  </div>
+</div>
+<div class="grid" id="grid"></div>
+</div><div id="toast" role="status"></div>
+<script>
+let sessions=[], frames=[], act=null, cur=0, a=null, b=null, recording=null;
+const $=id=>document.getElementById(id);
+const hhmmss=t=>t.slice(11,19);
+function toast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(toast.h);toast.h=setTimeout(()=>t.style.display='none',4000);}
+async function api(url,opts){const r=await fetch(url,opts);const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.detail||('Error '+r.status));return j;}
+const post=(url,body)=>api(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
+function range(){if(a===null||b===null)return null;return [Math.min(a,b),Math.max(a,b)];}
+
+async function loadMeta(){const m=await api('api/meta');$('newlabel').innerHTML=m.labels.map(l=>`<option>${l}</option>`).join('');$('newlight').innerHTML=m.lighting.map(l=>`<option>${l}</option>`).join('');}
+async function loadSessions(keep){
+  sessions=await api('api/sessions');
+  const sel=$('sess'), want=keep||sel.value;
+  sel.innerHTML=sessions.map(s=>`<option value="${s.session_id}">${s.session_id} · ${s.labels.join('/')} · ${s.lighting.join('/')} · ${s.frames} frames</option>`).join('');
+  if(want&&sessions.some(s=>s.session_id===want))sel.value=want;
+  await loadSession();
+}
+async function loadSession(){
+  const sid=$('sess').value; a=b=null; act=null;
+  if(!sid){frames=[];render();return;}
+  const st=await api('status'); recording=st.session?st.session.id:null;
+  frames=await api(`api/sessions/${sid}/frames`);
+  cur=Math.max(0,Math.min(cur,frames.length-1));
+  render();
+  api(`api/sessions/${sid}/activity`).then(x=>{act=x;markSpikes();drawStrip();}).catch(e=>toast(e.message));
+}
+function render(){
+  const s=sessions.find(x=>x.session_id===$('sess').value), locked=!!s&&recording===s.session_id;
+  $('info').textContent=s?`${hhmmss(s.start)} → ${hhmmss(s.end)}${locked?' · RECORDING NOW, editing locked':''}`:'No sessions yet';
+  ['t-range','t-after','t-before','relabel','relight'].forEach(id=>$(id).disabled=locked||!frames.length);
+  const g=$('grid'); g.innerHTML='';
+  frames.forEach((f,i)=>{
+    const d=document.createElement('div'); d.className='th'; d.dataset.i=i;
+    d.innerHTML=`<img loading="lazy" src="thumb/${f.path}" alt=""><span>${hhmmss(f.timestamp)} · ${f.label}</span>`;
+    d.onclick=ev=>{if(ev.shiftKey){a=cur;b=i;} setCur(i,false);};
+    g.appendChild(d);
+  });
+  setCur(cur,false);
+}
+function setCur(i,scroll=true){
+  if(!frames.length){$('preview').removeAttribute('src');$('cap').textContent='';$('range').textContent='No frames.';drawStrip();return;}
+  cur=Math.max(0,Math.min(frames.length-1,i)); const f=frames[cur], r=range();
+  $('preview').src='frame/'+f.path;
+  $('cap').innerHTML=`<b>${cur+1} / ${frames.length}</b> · ${hhmmss(f.timestamp)} · <b>${f.label}</b> · ${f.lighting}`;
+  $('range').textContent=r?`Range: frames ${r[0]+1} to ${r[1]+1} (${r[1]-r[0]+1} frames, ${hhmmss(frames[r[0]].timestamp)} → ${hhmmss(frames[r[1]].timestamp)})`
+    :(a!==null?`Start marked at frame ${a+1}. Now mark an end.`:'No range selected.');
+  document.querySelectorAll('.th').forEach(el=>{const k=+el.dataset.i;el.classList.toggle('cur',k===cur);el.classList.toggle('in',!!r&&k>=r[0]&&k<=r[1]);});
+  if(scroll){const el=document.querySelector(`.th[data-i="${cur}"]`); if(el) el.scrollIntoView({block:'nearest'});}
+  drawStrip();
+}
+function drawStrip(){
+  const c=$('strip'), dpr=window.devicePixelRatio||1, W=c.clientWidth, H=c.clientHeight;
+  c.width=W*dpr; c.height=H*dpr; const x=c.getContext('2d'); x.scale(dpr,dpr); x.clearRect(0,0,W,H);
+  const n=frames.length; if(!n) return; const bw=W/n, r=range();
+  if(r){x.fillStyle='rgba(76,141,255,.28)';x.fillRect(r[0]*bw,0,(r[1]-r[0]+1)*bw,H);}
+  if(act){
+    const mx=Math.max(1,...act.diff); x.fillStyle='#ffb84a';
+    act.diff.forEach((d,i)=>{const h=(d/mx)*(H-10); x.fillRect(i*bw,H-h,Math.max(1,bw-0.5),h);});
+    x.strokeStyle='#8fd1ff'; x.lineWidth=1.5; x.beginPath();
+    act.brightness.forEach((v,i)=>{const px=i*bw+bw/2, py=H-v*(H-6)-3; i?x.lineTo(px,py):x.moveTo(px,py);}); x.stroke();
+  }
+  x.fillStyle='#ffd24a'; x.fillRect(cur*bw,0,Math.max(2,bw),H);
+}
+function markSpikes(){
+  if(!act) return; const sorted=[...act.diff].sort((p,q)=>q-p), thr=sorted[Math.min(9,sorted.length-1)];
+  document.querySelectorAll('.th').forEach(el=>{const k=+el.dataset.i; el.classList.toggle('spike',act.diff[k]>0&&act.diff[k]>=thr);});
+}
+async function loadTrash(){
+  const t=await api('api/trash'), box=$('trash');
+  if(!t.length){box.textContent='Empty.';return;}
+  box.innerHTML='';
+  t.forEach(x=>{
+    const d=document.createElement('div'); d.className='trash-item';
+    d.innerHTML=`<span>${x.frames} frames · ${x.sessions.join(', ')}<br><small>${x.reason} · ${x.when.slice(0,16).replace('T',' ')}</small></span>`;
+    const btn=document.createElement('button'); btn.textContent='Restore';
+    btn.onclick=async()=>{try{const r=await post(`api/trash/${x.action_id}/restore`);toast(`Restored ${r.frames} frames.`);await loadSessions($('sess').value);loadTrash();}catch(e){toast(e.message);}};
+    d.appendChild(btn); box.appendChild(d);
+  });
+}
+async function doTrash(paths,reason){
+  if(!paths.length) return toast('Nothing to trash there.');
+  if(!confirm(`Move ${paths.length} frames to the trash?\n(${reason})`)) return;
+  try{const r=await post('api/trash',{paths,reason});toast(`Moved ${r.frames} frames to the trash.`);await loadSessions($('sess').value);loadTrash();}catch(e){toast(e.message);}
+}
+$('sess').onchange=()=>{cur=0;loadSession();};
+$('prev').onclick=()=>setCur(cur-1); $('next').onclick=()=>setCur(cur+1);
+$('mstart').onclick=()=>{a=cur;setCur(cur);}; $('mend').onclick=()=>{if(a===null)a=cur;b=cur;setCur(cur);};
+$('clear').onclick=()=>{a=b=null;setCur(cur);};
+$('strip').onclick=ev=>{const rc=ev.target.getBoundingClientRect(), i=Math.floor((ev.clientX-rc.left)/rc.width*frames.length); if(ev.shiftKey){a=cur;b=i;} setCur(i);};
+$('t-range').onclick=()=>{const r=range(); if(!r) return toast('Mark a start and an end first.');
+  doTrash(frames.slice(r[0],r[1]+1).map(f=>f.path),`range ${hhmmss(frames[r[0]].timestamp)}–${hhmmss(frames[r[1]].timestamp)}`);};
+$('t-after').onclick=()=>doTrash(frames.slice(cur).map(f=>f.path),`from ${hhmmss(frames[cur].timestamp)} to the end`);
+$('t-before').onclick=()=>doTrash(frames.slice(0,cur).map(f=>f.path),`start until ${hhmmss(frames[cur].timestamp)}`);
+$('relabel').onclick=async()=>{const r=range(); if(!r) return toast('Mark a start and an end first.');
+  const label=$('newlabel').value, paths=frames.slice(r[0],r[1]+1).map(f=>f.path);
+  if(!confirm(`Relabel ${paths.length} frames as ${label}?`)) return;
+  try{const res=await post('api/relabel',{paths,label});toast(`Relabelled ${res.frames} frames as ${label}.`);await loadSessions($('sess').value);}catch(e){toast(e.message);}};
+$('relight').onclick=async()=>{const r=range(); if(!r) return toast('Mark a start and an end first.');
+  const lighting=$('newlight').value, paths=frames.slice(r[0],r[1]+1).map(f=>f.path);
+  if(!confirm(`Change lighting of ${paths.length} frames to ${lighting}?`)) return;
+  try{const res=await post('api/lighting',{paths,lighting});toast(`Changed lighting of ${res.frames} frames to ${lighting}.`);await loadSessions($('sess').value);}catch(e){toast(e.message);}};
+document.addEventListener('keydown',ev=>{
+  if(ev.target.tagName==='SELECT') return; const step=ev.shiftKey?10:1;
+  if(ev.key==='ArrowRight'){ev.preventDefault();setCur(cur+step);}
+  else if(ev.key==='ArrowLeft'){ev.preventDefault();setCur(cur-step);}
+  else if(ev.key==='['){a=cur;setCur(cur);}
+  else if(ev.key===']'){if(a===null)a=cur;b=cur;setCur(cur);}
+});
+window.addEventListener('resize',drawStrip);
+loadMeta().then(()=>loadSessions()).then(loadTrash).catch(e=>toast(e.message));
+</script></body></html>

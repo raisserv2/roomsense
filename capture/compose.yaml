@@ -5,7 +5,10 @@ services:
     restart: unless-stopped
     user: "1000:1000"
     env_file: .env
+    environment:
+      DATA_DIR: /data/raw
+      TRASH_DIR: /data/trash
     ports:
       - "127.0.0.1:8100:8100"
     volumes:
-      - ../data/raw:/data/raw
+      - ../data:/data
