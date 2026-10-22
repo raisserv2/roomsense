@@ -2,3 +2,20 @@ split:
   seed: 42
   val: 0.15
   test: 0.15
+train:
+  seed: 42
+  epochs: 8
+  batch_size: 64
+  lr: 0.001
+  img_h: 224
+  img_w: 224
+  workers: 8
+preprocess:
+  seed: 42
+  trim_n: 3
+  keep_ratio: 0.10
+  min_k: 5
+  max_k: 60
+  img_size: 224
+  blur_faces: true
+  plot_sessions: 4

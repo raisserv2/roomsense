@@ -1,41 +1,41 @@
 {
   "seed": 42,
   "sessions": {
-    "test": 18,
-    "train": 32,
-    "val": 13
+    "test": 17,
+    "val": 12,
+    "train": 34
   },
   "frames": {
-    "train": 10644,
-    "val": 2357,
-    "test": 2183
+    "train": 857,
+    "val": 184,
+    "test": 181
   },
   "frame_share": {
     "train": 0.701,
-    "val": 0.155,
-    "test": 0.144
+    "val": 0.151,
+    "test": 0.148
   },
   "per_class": {
     "train": {
-      "at_desk": 5021,
-      "in_room": 210,
-      "lying_in_bed": 1170,
-      "sitting_on_bed": 680,
-      "empty": 3563
+      "in_room": 39,
+      "empty": 235,
+      "lying_in_bed": 88,
+      "sitting_on_bed": 72,
+      "at_desk": 423
     },
     "val": {
-      "in_room": 45,
-      "empty": 742,
-      "at_desk": 1125,
-      "sitting_on_bed": 167,
-      "lying_in_bed": 278
+      "in_room": 10,
+      "empty": 51,
+      "at_desk": 89,
+      "sitting_on_bed": 16,
+      "lying_in_bed": 18
     },
     "test": {
-      "lying_in_bed": 206,
-      "in_room": 40,
-      "empty": 729,
-      "at_desk": 1098,
-      "sitting_on_bed": 110
+      "lying_in_bed": 20,
+      "at_desk": 91,
+      "empty": 49,
+      "in_room": 8,
+      "sitting_on_bed": 13
     }
   },
   "classes_missing_from_val_or_test": []

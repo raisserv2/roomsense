@@ -6,15 +6,44 @@ stages:
       - data/raw
     outs:
       - data/processed/manifest.csv
+  preprocess:
+    cmd: python scripts/preprocess.py
+    deps:
+      - scripts/preprocess.py
+      - data/processed/manifest.csv
+      - data/raw
+    params:
+      - preprocess
+    outs:
+      - data/processed/clean_manifest.csv
+      - data/processed/images
+      - reports/clusters
+    metrics:
+      - reports/preprocess_report.json:
+          cache: false
   split:
     cmd: python3 scripts/split.py --seed ${split.seed} --val ${split.val} --test ${split.test}
     deps:
       - scripts/split.py
-      - data/processed/manifest.csv
+      - data/processed/clean_manifest.csv
     params:
       - split
     outs:
       - data/processed/splits.csv
     metrics:
       - reports/split_report.json:
+          cache: false
+  train:
+    cmd: python scripts/train.py
+    deps:
+      - scripts/train.py
+      - data/processed/splits.csv
+      - data/processed/images
+    params:
+      - train
+    outs:
+      - models/best.pt
+      - models/classes.json
+    metrics:
+      - reports/metrics.json:
           cache: false

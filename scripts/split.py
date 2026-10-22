@@ -8,7 +8,7 @@ p.add_argument("--val", type=float, default=0.15)
 p.add_argument("--test", type=float, default=0.15)
 a = p.parse_args()
 
-with open("data/processed/manifest.csv", newline="") as f:
+with open("data/processed/clean_manifest.csv", newline="") as f:
     rows = list(csv.DictReader(f))
 
 by_sess = defaultdict(Counter)

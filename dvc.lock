@@ -20,14 +20,14 @@ stages:
   split:
     cmd: python3 scripts/split.py --seed 42 --val 0.15 --test 0.15
     deps:
-    - path: data/processed/manifest.csv
+    - path: data/processed/clean_manifest.csv
       hash: md5
-      md5: 135b1e06d3552e58a8aa374aff3402be
-      size: 1663795
+      md5: 9eb3cb80c493e6e0591c3d0dd215fd32
+      size: 135484
     - path: scripts/split.py
       hash: md5
-      md5: 61aad38bbd7090a3d67f69dc7d08add1
-      size: 2671
+      md5: 3dbf403610bc23d73fdeb64fdc5eee3b
+      size: 2677
     params:
       params.yaml:
         split:
@@ -37,9 +37,94 @@ stages:
     outs:
     - path: data/processed/splits.csv
       hash: md5
-      md5: a901c119366620528fa7869a194b9d65
-      size: 1748008
+      md5: 551cf25f7c98c2b1f1dc89f402445305
+      size: 143496
     - path: reports/split_report.json
       hash: md5
-      md5: 0582d86c5a3f4978c8e2fd7cbca3fb96
-      size: 723
+      md5: b88b290607d5df4e9943214f9c18bd6e
+      size: 702
+  train:
+    cmd: python scripts/train.py
+    deps:
+    - path: data/processed/images
+      hash: md5
+      md5: a060369e1eac89ffe5803b7d53dfb67d.dir
+      size: 23476564
+      nfiles: 1222
+    - path: data/processed/splits.csv
+      hash: md5
+      md5: 551cf25f7c98c2b1f1dc89f402445305
+      size: 143496
+    - path: scripts/train.py
+      hash: md5
+      md5: 09ccdf3bcfc4a2c8409bf16ced95b0a9
+      size: 4369
+    params:
+      params.yaml:
+        train:
+          seed: 42
+          epochs: 8
+          batch_size: 64
+          lr: 0.001
+          img_h: 224
+          img_w: 224
+          workers: 8
+    outs:
+    - path: models/best.pt
+      hash: md5
+      md5: 9560c6ac57d4d0683a848394e1a2865a
+      size: 6214953
+    - path: models/classes.json
+      hash: md5
+      md5: 6ffe9a0668ee4ea9cd5960b26ffaf9e5
+      size: 65
+    - path: reports/metrics.json
+      hash: md5
+      md5: 10f1ff7a90dcec652cda8d773674f4df
+      size: 639
+  preprocess:
+    cmd: python scripts/preprocess.py
+    deps:
+    - path: data/processed/manifest.csv
+      hash: md5
+      md5: 135b1e06d3552e58a8aa374aff3402be
+      size: 1663795
+    - path: data/raw
+      hash: md5
+      md5: 037ba337d8c85696d725fcab537225fe.dir
+      size: 488405336
+      nfiles: 15186
+    - path: scripts/preprocess.py
+      hash: md5
+      md5: 6947de41181d6e4198feb6982571b611
+      size: 6088
+    params:
+      params.yaml:
+        preprocess:
+          seed: 42
+          trim_n: 3
+          keep_ratio: 0.1
+          min_k: 5
+          max_k: 60
+          img_size: 224
+          blur_faces: true
+          plot_sessions: 4
+    outs:
+    - path: data/processed/clean_manifest.csv
+      hash: md5
+      md5: 9eb3cb80c493e6e0591c3d0dd215fd32
+      size: 135484
+    - path: data/processed/images
+      hash: md5
+      md5: a060369e1eac89ffe5803b7d53dfb67d.dir
+      size: 23476564
+      nfiles: 1222
+    - path: reports/clusters
+      hash: md5
+      md5: d387d5dd656b8753f2571a7d8bc37a20.dir
+      size: 172300
+      nfiles: 4
+    - path: reports/preprocess_report.json
+      hash: md5
+      md5: 03ce856d90d22534dae40efa051cfff1
+      size: 246

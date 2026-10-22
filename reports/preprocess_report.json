@@ -1,0 +1,14 @@
+{
+  "frames_in": 15184,
+  "after_trim": 14824,
+  "kept": 1222,
+  "sessions": 63,
+  "faces_blurred_total": 202,
+  "kept_per_class": {
+    "at_desk": 603,
+    "empty": 335,
+    "lying_in_bed": 126,
+    "sitting_on_bed": 101,
+    "in_room": 57
+  }
+}

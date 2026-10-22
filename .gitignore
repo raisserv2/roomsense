@@ -9,3 +9,7 @@ __pycache__/
 *.pyc
 .venv/
 /data/raw/
+.venv/
+mlflow.db
+mlartifacts/
+data/_interim/
