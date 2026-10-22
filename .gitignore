@@ -13,3 +13,4 @@ __pycache__/
 mlflow.db
 mlartifacts/
 data/_interim/
+mlruns/
