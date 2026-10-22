@@ -1,0 +1,20 @@
+stages:
+  prepare:
+    cmd: python3 scripts/prepare.py
+    deps:
+      - scripts/prepare.py
+      - data/raw
+    outs:
+      - data/processed/manifest.csv
+  split:
+    cmd: python3 scripts/split.py --seed ${split.seed} --val ${split.val} --test ${split.test}
+    deps:
+      - scripts/split.py
+      - data/processed/manifest.csv
+    params:
+      - split
+    outs:
+      - data/processed/splits.csv
+    metrics:
+      - reports/split_report.json:
+          cache: false

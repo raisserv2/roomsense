@@ -1,0 +1,45 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python3 scripts/prepare.py
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 037ba337d8c85696d725fcab537225fe.dir
+      size: 488405336
+      nfiles: 15186
+    - path: scripts/prepare.py
+      hash: md5
+      md5: a143b92c4ad453bac61844ca50daef5d
+      size: 779
+    outs:
+    - path: data/processed/manifest.csv
+      hash: md5
+      md5: 135b1e06d3552e58a8aa374aff3402be
+      size: 1663795
+  split:
+    cmd: python3 scripts/split.py --seed 42 --val 0.15 --test 0.15
+    deps:
+    - path: data/processed/manifest.csv
+      hash: md5
+      md5: 135b1e06d3552e58a8aa374aff3402be
+      size: 1663795
+    - path: scripts/split.py
+      hash: md5
+      md5: 61aad38bbd7090a3d67f69dc7d08add1
+      size: 2671
+    params:
+      params.yaml:
+        split:
+          seed: 42
+          val: 0.15
+          test: 0.15
+    outs:
+    - path: data/processed/splits.csv
+      hash: md5
+      md5: a901c119366620528fa7869a194b9d65
+      size: 1748008
+    - path: reports/split_report.json
+      hash: md5
+      md5: 0582d86c5a3f4978c8e2fd7cbca3fb96
+      size: 723
