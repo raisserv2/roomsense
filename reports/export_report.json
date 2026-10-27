@@ -1,0 +1,15 @@
+{
+  "exporter": "torchscript",
+  "opset": 17,
+  "onnx_size_mb": 6.1,
+  "parity_max_abs_diff": 1.9788742065429688e-05,
+  "parity_argmax_agreement": 1.0,
+  "latency_ms_p50": 2.2858755000925157,
+  "latency_ms_p95": 2.307410699972934,
+  "preprocess_ms_p50_720p": 6.058989000052861,
+  "bench_threads": 2,
+  "onnx_test_macro_f1": 0.6146286993857298,
+  "onnx_test_accuracy": 0.6685082872928176,
+  "reference_brightness_mean": 95.06285785354108,
+  "reference_confidence_mean": 0.8036460876464844
+}

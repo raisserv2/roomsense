@@ -1,0 +1,12 @@
+{
+  "tracking_uri": "https://nova.tailb5cb87.ts.net:5443",
+  "run_id": "609ea65aa14e451a93c4d840109f7e40",
+  "model": "roomsense",
+  "version": "1",
+  "promoted": true,
+  "reason": "no champion yet",
+  "candidate_test_macro_f1": 0.6146286993857298,
+  "champion_version_before": null,
+  "champion_test_macro_f1": null,
+  "serving_alias": "roomsense@champion"
+}

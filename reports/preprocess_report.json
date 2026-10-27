@@ -3,7 +3,7 @@
   "after_trim": 14824,
   "kept": 1222,
   "sessions": 63,
-  "faces_blurred_total": 202,
+  "faces_blurred_total": 0,
   "kept_per_class": {
     "at_desk": 603,
     "empty": 335,

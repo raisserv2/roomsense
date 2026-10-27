@@ -1,5 +1,7 @@
 {
   "seed": 42,
+  "include": {},
+  "frames_before_filter": 1222,
   "sessions": {
     "test": 17,
     "val": 12,
