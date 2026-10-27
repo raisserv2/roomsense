@@ -12,3 +12,12 @@ services:
       - "127.0.0.1:8100:8100"
     volumes:
       - ../data:/data
+    networks:
+      - default
+      - roomsense
+
+# Shared with the RoomSense serving stack (deploy/), so the API can read the
+# active capture session as ground truth. Create once: docker network create roomsense
+networks:
+  roomsense:
+    external: true

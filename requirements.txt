@@ -1,1 +1,18 @@
+# Training pipeline (Legion). Install PyTorch first with the CUDA build that
+# matches the driver, then: uv pip install -r requirements.txt -r requirements-dev.txt
+torch
+torchvision
+dvc[ssh]
+mlflow>=3.0,<4
+ray
+scikit-learn
+pandas
+numpy
+pillow
+pyyaml
+matplotlib
 opencv-python-headless<5
+onnx
+onnxruntime
+onnxscript
+requests

@@ -1,3 +1,9 @@
+data:
+  # Optional filter applied before splitting, e.g. {lighting: [tube_on]} or
+  # {period: [day]}. Empty = use everything. Drift demo: train on one
+  # condition, serve another, watch the PSI alert fire, then clear the filter
+  # and retrain.
+  include: {}
 split:
   seed: 42
   val: 0.15
@@ -10,6 +16,7 @@ train:
   img_h: 224
   img_w: 224
   workers: 8
+  log_torch_model: true
 preprocess:
   seed: 42
   trim_n: 3
@@ -17,5 +24,16 @@ preprocess:
   min_k: 5
   max_k: 60
   img_size: 224
-  blur_faces: true
+  blur_faces: false
   plot_sessions: 4
+export:
+  opset: 17
+  parity_frames: 32
+  parity_tol: 0.001
+  bench_threads: 2
+  bench_runs: 50
+register:
+  model_name: roomsense
+  alias: champion
+  min_delta: 0.0
+  force: false

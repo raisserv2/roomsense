@@ -1,0 +1,62 @@
+groups:
+  - name: roomsense
+    rules:
+      # The AIOps loop: input drift -> alert -> Alertmanager webhook -> retrain request.
+      - alert: RoomSenseDrift
+        expr: roomsense_drift_ood_share > 0.5 and roomsense_drift_window_size >= 30
+        for: 5m
+        labels:
+          severity: warning
+          action: retrain
+        annotations:
+          summary: "Input drift: {{ $value | humanizePercentage }} of recent frames are in lighting the model never trained on"
+          description: "Live camera frames no longer look like the training frames. A retrain has been requested."
+
+      - alert: RoomSenseLowConfidence
+        expr: roomsense_window_confidence_mean < 0.6 and roomsense_drift_window_size >= 30
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Model is unsure: mean confidence {{ $value | humanizePercentage }}"
+
+      - alert: RoomSenseLiveAccuracyDrop
+        expr: roomsense_live_accuracy >= 0 and roomsense_live_accuracy < 0.6
+        for: 10m
+        labels:
+          severity: warning
+          action: retrain
+        annotations:
+          summary: "Live accuracy vs capture labels fell to {{ $value | humanizePercentage }}"
+
+      - alert: RoomSenseAPIDown
+        expr: up{job="roomsense-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "RoomSense API is not answering"
+
+      - alert: RoomSenseNoModel
+        expr: roomsense_model_loaded == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RoomSense API has no model loaded"
+
+      - alert: RoomSenseCameraStale
+        expr: time() - roomsense_last_frame_timestamp_seconds > 120
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No camera frame for {{ $value | humanizeDuration }}"
+
+      - alert: RoomSenseSlowInference
+        expr: histogram_quantile(0.95, sum by (le) (rate(roomsense_inference_latency_seconds_bucket[5m]))) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 inference latency {{ $value | humanizeDuration }}"

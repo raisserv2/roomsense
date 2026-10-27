@@ -11,6 +11,20 @@ a = p.parse_args()
 with open("data/processed/clean_manifest.csv", newline="") as f:
     rows = list(csv.DictReader(f))
 
+# Optional data filter from params.yaml, e.g. {"lighting": ["tube_on"]} or
+# {"period": ["day"]}. Used for the drift demo: train on one condition only,
+# then show live traffic from another condition drifting away from it.
+include = {}
+if Path("params.yaml").exists():
+    import yaml
+    include = (yaml.safe_load(open("params.yaml")).get("data") or {}).get("include") or {}
+n_before = len(rows)
+for col, allowed in include.items():
+    allowed = {str(v) for v in (allowed if isinstance(allowed, list) else [allowed])}
+    rows = [r for r in rows if r.get(col) in allowed]
+if not rows:
+    raise SystemExit(f"data.include {include} removed every frame")
+
 by_sess = defaultdict(Counter)
 for r in rows:
     by_sess[r["session_id"]][r["label"]] += 1
@@ -67,6 +81,8 @@ with open("data/processed/splits.csv", "w", newline="") as f:
 
 report = {
     "seed": a.seed,
+    "include": include,
+    "frames_before_filter": n_before,
     "sessions": dict(Counter(assign.values())),
     "frames": {s: sum(have[s].values()) for s in names},
     "frame_share": {s: round(sum(have[s].values()) / len(rows), 3) for s in names},

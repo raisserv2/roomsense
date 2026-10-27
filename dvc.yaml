@@ -28,6 +28,7 @@ stages:
       - data/processed/clean_manifest.csv
     params:
       - split
+      - data
     outs:
       - data/processed/splits.csv
     metrics:
@@ -44,6 +45,38 @@ stages:
     outs:
       - models/best.pt
       - models/classes.json
+      - models/train_run.json:
+          cache: false
     metrics:
       - reports/metrics.json:
+          cache: false
+  export:
+    cmd: python scripts/export.py
+    deps:
+      - scripts/export.py
+      - roomsense/frames.py
+      - roomsense/drift.py
+      - roomsense/onnx_eval.py
+      - models/best.pt
+      - models/classes.json
+      - data/processed/splits.csv
+      - data/processed/images
+    params:
+      - export
+    outs:
+      - models/model.onnx
+      - models/model_meta.json
+    metrics:
+      - reports/export_report.json:
+          cache: false
+  register:
+    cmd: python scripts/register.py
+    deps:
+      - scripts/register.py
+      - models/model.onnx
+      - models/model_meta.json
+    params:
+      - register
+    metrics:
+      - reports/register_report.json:
           cache: false
