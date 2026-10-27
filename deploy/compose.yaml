@@ -1,0 +1,143 @@
+# RoomSense serving + monitoring stack (runs on nova).
+#   cd ~/roomsense/deploy && cp .env.example .env && nano .env
+#   docker network create roomsense     # once; shared with the capture service
+#   docker compose up -d --build
+# Every port is bound to 127.0.0.1 and published to the tailnet with Tailscale
+# Serve (see README). Nothing is reachable from the room network or the internet.
+
+name: roomsense
+
+x-restart: &restart
+  restart: unless-stopped
+
+networks:
+  default:
+    name: roomsense
+    external: true
+
+services:
+  mlflow:
+    <<: *restart
+    build: ./mlflow
+    image: roomsense-mlflow:3.17.2
+    container_name: roomsense-mlflow
+    user: "1000:1000"
+    environment:
+      HOME: /mlflow
+    command: >
+      mlflow server --host 0.0.0.0 --port 5000 --workers 1
+      --backend-store-uri sqlite:////mlflow/mlflow.db
+      --artifacts-destination /mlflow/artifacts --serve-artifacts
+      --allowed-hosts ${MLFLOW_ALLOWED_HOSTS:-mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1:5000}
+    volumes:
+      - ./data/mlflow:/mlflow
+    ports:
+      - "127.0.0.1:${MLFLOW_PORT:-5000}:5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+
+  api:
+    <<: *restart
+    build:
+      context: ..
+      dockerfile: deploy/api/Dockerfile
+    image: roomsense-api
+    container_name: roomsense-api
+    env_file: .env
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      STATE_DIR: /state
+      ROOT_PATH: /api
+    volumes:
+      - ./data/api:/state
+    ports:
+      - "127.0.0.1:${API_PORT:-8300}:8000"
+    depends_on:
+      - mlflow
+
+  frontend:
+    <<: *restart
+    build: ./frontend
+    image: roomsense-frontend
+    container_name: roomsense-frontend
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-8200}:80"
+    depends_on:
+      - api
+
+  prometheus:
+    <<: *restart
+    image: prom/prometheus:v3.5.0
+    container_name: roomsense-prometheus
+    user: "1000:1000"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=60d
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - ./data/prometheus:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9091}:9090"
+
+  alertmanager:
+    <<: *restart
+    image: prom/alertmanager:v0.28.1
+    container_name: roomsense-alertmanager
+    user: "1000:1000"
+    entrypoint: ["/bin/sh", "/etc/alertmanager/entrypoint.sh"]
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
+    volumes:
+      - ./alertmanager/entrypoint.sh:/etc/alertmanager/entrypoint.sh:ro
+      - ./data/alertmanager:/alertmanager
+    ports:
+      - "127.0.0.1:${ALERTMANAGER_PORT:-9093}:9093"
+
+  grafana:
+    <<: *restart
+    image: grafana/grafana:12.0.2
+    container_name: roomsense-grafana
+    user: "1000:1000"
+    environment:
+      GF_PATHS_DATA: /var/lib/grafana/data
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/roomsense.json
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000/}
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ./data/grafana:/var/lib/grafana/data
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3300}:3000"
+    depends_on:
+      - prometheus
+
+  # Optional: the registry's champion model behind MLflow's own REST server.
+  #   docker compose --profile mlflow-serve up -d mlflow-serve
+  #   curl -X POST http://127.0.0.1:5001/invocations -H 'Content-Type: application/json' -d @request.json
+  mlflow-serve:
+    profiles: ["mlflow-serve"]
+    <<: *restart
+    image: roomsense-mlflow:3.17.2
+    container_name: roomsense-mlflow-serve
+    user: "1000:1000"
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      HOME: /tmp
+    command: >
+      mlflow models serve -m models:/roomsense@champion
+      --host 0.0.0.0 --port 5001 --env-manager local --workers 1
+    ports:
+      - "127.0.0.1:${MLFLOW_SERVE_PORT:-5001}:5001"
+    depends_on:
+      - mlflow

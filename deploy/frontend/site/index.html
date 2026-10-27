@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RoomSense</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>RoomSense</h1>
+  <span id="health" class="pill">connecting…</span>
+  <nav id="links"></nav>
+</header>
+
+<main>
+  <section class="card live">
+    <h2>Live room</h2>
+    <div class="frame"><img id="frame" alt="Latest camera frame"><span id="frameAge"></span></div>
+    <div class="state">
+      <div class="label" id="label">–</div>
+      <div class="conf"><div class="bar"><i id="confBar"></i></div><span id="conf">–</span></div>
+      <div class="truth" id="truth"></div>
+    </div>
+    <ul class="probs" id="probs"></ul>
+  </section>
+
+  <section class="card">
+    <h2>Drift monitor</h2>
+    <div class="psi"><span id="ood">–</span><small>of recent frames are in lighting the model never trained on (alert above <b id="thr">50%</b>)</small></div>
+    <p id="driftMsg" class="msg">Waiting for frames…</p>
+    <canvas id="hist" width="520" height="180" aria-label="Brightness: training vs live"></canvas>
+    <p class="legend"><span class="sw ref"></span>training frames <span class="sw cur"></span>last <b id="win">0</b> live frames</p>
+    <dl class="kv">
+      <dt>PSI (live vs train)</dt><dd id="psi">–</dd>
+      <dt>Brightness (live / train)</dt><dd id="bright">–</dd>
+      <dt>Confidence (live / val)</dt><dd id="confm">–</dd>
+      <dt>Live accuracy</dt><dd id="acc">–</dd>
+      <dt>Retrain</dt><dd id="retrain">–</dd>
+    </dl>
+  </section>
+
+  <section class="card">
+    <h2>Serving model</h2>
+    <dl class="kv" id="model"></dl>
+  </section>
+
+  <section class="card">
+    <h2>Try a photo</h2>
+    <form id="upload">
+      <input type="file" id="file" accept="image/*" required>
+      <button type="submit">Classify</button>
+    </form>
+    <img id="upPreview" alt="">
+    <pre id="upResult"></pre>
+  </section>
+</main>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

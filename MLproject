@@ -1,0 +1,20 @@
+name: roomsense
+
+# Run with:  mlflow run . -e <entry point> --env-manager local
+# (the Legion's .venv already has every dependency; see requirements.txt)
+entry_points:
+  main:
+    # The whole reproducible pipeline: prepare -> preprocess -> split -> train -> export -> register
+    command: "dvc repro"
+  train:
+    parameters:
+      epochs: {type: float, default: 8}
+      lr: {type: float, default: 0.001}
+      batch_size: {type: float, default: 64}
+    command: "python scripts/train.py --epochs {epochs} --lr {lr} --batch-size {batch_size}"
+  export:
+    command: "python scripts/export.py"
+  register:
+    command: "python scripts/register.py"
+  retrain:
+    command: "python scripts/retrain.py --force"

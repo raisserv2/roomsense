@@ -1,0 +1,5 @@
+# Tests (run on the Legion: pytest)
+-r deploy/api/requirements.txt
+pytest
+httpx
+onnx
