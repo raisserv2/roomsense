@@ -10,19 +10,35 @@ split:
   test: 0.15
 train:
   seed: 42
-  epochs: 8
+  # phase 1: only the new classifier head learns (backbone frozen)
+  freeze_epochs: 3
+  head_lr: 0.001
+  # phase 2: the whole network fine-tunes, with early stopping on val macro-F1
+  epochs: 15
+  lr: 0.0003
+  patience: 4
+  weight_decay: 0.0001
   batch_size: 64
-  lr: 0.001
   img_h: 224
   img_w: 224
   workers: 8
+  # sampler = every class seen equally often; loss = class-weighted loss instead
+  balance: sampler
+  session_balance: 0.5   # 0 = off, 1 = every session of a class weighs the same
+  label_smoothing: 0.1
+  augment:               # colour only: no flips or crops (desk cue at the right edge)
+    brightness: 0.3
+    contrast: 0.3
+    saturation: 0.2
+    hue: 0.02
+  calibrate: true        # temperature scaling on the validation set
   log_torch_model: true
 preprocess:
   seed: 42
   trim_n: 3
   keep_ratio: 0.10
   min_k: 5
-  max_k: 60
+  max_k: 80
   img_size: 224
   blur_faces: false
   plot_sessions: 4
