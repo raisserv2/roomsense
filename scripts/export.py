@@ -1,6 +1,8 @@
 """DVC stage `export`: PyTorch checkpoint -> ONNX model package for CPU serving.
 
-1. Rebuild MobileNetV3-Small, load models/best.pt, export models/model.onnx.
+1. Rebuild MobileNetV3-Small, load models/best.pt, divide its logits by the
+   calibration temperature (models/calibration.json), export models/model.onnx.
+   The served model therefore outputs calibrated confidences directly.
 2. Parity check: ONNX Runtime output must match PyTorch on real validation frames.
 3. CPU latency benchmark (what nova's i5 will see).
 4. Evaluate the ONNX model on the test split.
@@ -38,7 +40,24 @@ df = pd.read_csv("data/processed/splits.csv")
 model = models.mobilenet_v3_small(weights=None)
 model.classifier[3] = nn.Linear(model.classifier[3].in_features, len(classes))
 model.load_state_dict(torch.load("models/best.pt", map_location="cpu"))
-model.eval()
+TEMP = 1.0
+if Path("models/calibration.json").exists():
+    TEMP = float(json.load(open("models/calibration.json")).get("temperature", 1.0))
+
+
+class Calibrated(nn.Module):
+    """Logits divided by the temperature: same winner, honest confidence."""
+
+    def __init__(self, net, temperature):
+        super().__init__()
+        self.net = net
+        self.register_buffer("t", torch.tensor(float(temperature)))
+
+    def forward(self, x):
+        return self.net(x) / self.t
+
+
+model = Calibrated(model, TEMP).eval()
 dummy = torch.zeros(1, 3, SIZE, SIZE)
 kw = dict(input_names=["input"], output_names=["logits"], opset_version=P["opset"],
           dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}})
@@ -104,6 +123,7 @@ meta = {
     "input_name": "input",
     "output_name": "logits",
     "normalisation": {"mean": frames.MEAN.tolist(), "std": frames.STD.tolist()},
+    "temperature": TEMP,
     "reference": reference,
     "metrics": {"test_macro_f1": test["macro_f1"], "test_accuracy": test["accuracy"],
                 "val_macro_f1": valm["macro_f1"],
@@ -116,6 +136,7 @@ meta = {
 META.write_text(json.dumps(meta, indent=2))
 report = {
     "exporter": exporter,
+    "temperature": TEMP,
     "opset": P["opset"],
     "onnx_size_mb": round(OUT.stat().st_size / 1e6, 2),
     "parity_max_abs_diff": max_diff,

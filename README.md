@@ -31,8 +31,8 @@ All web UIs are reachable only inside the tailnet (Tailscale Serve, HTTPS). Ever
 | `prepare` | Legion (DVC) | `data/raw` → `manifest.csv` (missing files dropped, day/night added) |
 | `preprocess` | Legion (DVC, Ray) | manifest → trimmed, resized 224×224, de-duplicated frames (k-means per session) |
 | `split` | Legion (DVC) | clean manifest → `splits.csv`, split **by session** (no leakage), optional `data.include` filter |
-| `train` | Legion (DVC, GPU) | splits → `models/best.pt`, MLflow run (params, curves, test macro-F1, PyTorch model) |
-| `export` | Legion (DVC) | checkpoint → `model.onnx` + parity check + CPU latency + reference stats for drift |
+| `train` | Legion (DVC, GPU) | splits → `models/best.pt` + `calibration.json`, MLflow run (params, curves, test macro-F1, confusion matrix, PyTorch model). Class/session-balanced sampling, label smoothing, frozen-head warm-up then fine-tune, colour augmentation, early stopping, temperature calibration |
+| `export` | Legion (DVC) | checkpoint ÷ temperature → `model.onnx` (serves calibrated confidences) + parity check + CPU latency + reference stats for drift |
 | `register` | Legion (DVC) | ONNX → MLflow registry version; promoted to alias `champion` only if it beats the current champion **on the same test split** |
 | `mlflow` | nova (Docker) | tracking server + model registry (sqlite + artifact store) |
 | `api` | nova (Docker) | champion model (hot-reloaded) + camera frames → predictions, `/metrics`, drift + live accuracy |
@@ -77,7 +77,7 @@ cd ~/roomsense && source .venv/bin/activate
 git stash                                # local edits are already in this version
 git pull
 uv pip install -r requirements.txt -r requirements-dev.txt "mlflow==3.17.2"
-pytest                                   # 28 tests
+pytest                                   # 32 tests
 echo 'export MLFLOW_TRACKING_URI=https://nova.tailb5cb87.ts.net:5443' >> ~/.bashrc && source ~/.bashrc
 dvc repro                                # trains, exports, registers + promotes on nova
 dvc push && git add dvc.lock reports && git commit -m "pipeline run" && git push

@@ -38,6 +38,7 @@ stages:
     cmd: python scripts/train.py
     deps:
       - scripts/train.py
+      - roomsense/calibration.py
       - data/processed/splits.csv
       - data/processed/images
     params:
@@ -45,10 +46,14 @@ stages:
     outs:
       - models/best.pt
       - models/classes.json
+      - models/calibration.json
       - models/train_run.json:
           cache: false
     metrics:
       - reports/metrics.json:
+          cache: false
+    plots:
+      - reports/confusion_matrix.png:
           cache: false
   export:
     cmd: python scripts/export.py
@@ -59,6 +64,7 @@ stages:
       - roomsense/onnx_eval.py
       - models/best.pt
       - models/classes.json
+      - models/calibration.json
       - data/processed/splits.csv
       - data/processed/images
     params:
