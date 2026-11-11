@@ -24,8 +24,13 @@ import yaml
 from mlflow import MlflowClient
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from roomsense import registry  # noqa: E402
 from roomsense.model_pkg import load_package  # noqa: E402
 from roomsense.onnx_eval import macro_f1, session  # noqa: E402
+from roomsense.runlog import start_stage  # noqa: E402
+
+stage = start_stage("register")
+log = stage.log
 
 PARAMS = yaml.safe_load(open("params.yaml"))
 P = PARAMS["register"]
@@ -93,8 +98,13 @@ with mlflow.start_run(run_id=run_id, run_name=None if run_id else "register") as
     client.set_model_version_tag(NAME, version, "test_macro_f1", f"{cand['macro_f1']:.4f}")
     client.set_model_version_tag(NAME, version, "decision", ("promoted: " if promote else "kept champion: ") + reason)
     client.set_model_version_tag(NAME, version, "data_include", json.dumps(meta.get("data_include") or {}))
+    client.set_model_version_tag(NAME, version, "git_commit", meta.get("git_commit") or "")
+    client.set_model_version_tag(NAME, version, "data_version", meta.get("data_version") or "")
     if promote:
-        client.set_registered_model_alias(NAME, ALIAS, version)
+        # Moving the alias is the deployment. The replaced version is remembered for rollback.
+        registry.promote(client, NAME, version, ALIAS, reason)
+    for extra in sorted(Path("reports").glob("*.json")):
+        mlflow.log_artifact(str(extra), artifact_path="pipeline")
     mlflow.log_metrics({"register_candidate_macro_f1": cand["macro_f1"],
                         **({"register_champion_macro_f1": champ["macro_f1"]} if champ else {})})
 
@@ -112,4 +122,5 @@ report = {
 }
 REPORT.parent.mkdir(exist_ok=True)
 REPORT.write_text(json.dumps(report, indent=2))
-print(json.dumps(report, indent=2))
+log.info("register report: %s", json.dumps(report))
+stage.done(items=len(test), version=version, promoted=bool(promote))

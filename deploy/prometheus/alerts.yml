@@ -60,3 +60,52 @@ groups:
           severity: warning
         annotations:
           summary: "p95 inference latency {{ $value | humanizeDuration }}"
+
+      # --- the rest of the stack ---------------------------------------------
+      - alert: RoomSenseComponentDown
+        expr: up{job!="roomsense-api"} == 0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} is not answering Prometheus"
+
+      - alert: RoomSenseMLflowDown
+        expr: roomsense_dependency_up{dependency="mlflow"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The API cannot reach MLflow (no new champion can be loaded)"
+
+      - alert: RoomSensePipelineFailed
+        expr: roomsense_pipeline_last_run_success == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The latest training pipeline run failed (see the Pipeline page)"
+
+      - alert: RoomSenseCaptureCameraErrors
+        expr: increase(roomsense_capture_camera_errors_total[10m]) > 20
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "The capture service is losing frames: {{ $value | humanize }} camera errors in 10 minutes"
+
+      - alert: NovaDiskAlmostFull
+        expr: node_filesystem_avail_bytes{fstype=~"ext4|xfs|btrfs"} / node_filesystem_size_bytes{fstype=~"ext4|xfs|btrfs"} < 0.10
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Less than 10% free on {{ $labels.mountpoint }}"
+
+      - alert: NovaMemoryLow
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes < 0.08
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "nova has under 8% memory available"

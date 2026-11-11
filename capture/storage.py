@@ -13,6 +13,8 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import capmetrics as M
+
 log = logging.getLogger("storage")
 
 DATA_DIR = Path(os.environ.get("DATA_DIR", "/data/raw"))
@@ -81,6 +83,7 @@ def _write_manifest(rows: list) -> None:
 
 
 def _log(action: str, action_id: str, sessions: set, count: int, detail: str) -> None:
+    M.CURATION.labels(action).inc()
     _append_csv(CURATION_LOG, LOG_FIELDS, {
         "timestamp": now().isoformat(), "action_id": action_id, "action": action,
         "sessions": " ".join(sorted(sessions)), "frames": count, "detail": detail})
@@ -207,3 +210,43 @@ def set_lighting(paths: list, lighting: str) -> int:
              len(targets), f"{'/'.join(old)} -> {lighting}")
         log.info("Changed lighting of %d frames to %s", len(targets), lighting)
         return len(targets)
+
+
+_stats_cache = {"key": None, "value": None}
+
+
+def dataset_stats() -> dict:
+    """Totals of the raw dataset, recomputed only when frames.csv changed."""
+    try:
+        st = MANIFEST.stat()
+        key = (st.st_mtime_ns, st.st_size)
+    except OSError:
+        key = None
+    if _stats_cache["value"] is not None and _stats_cache["key"] == key:
+        return _stats_cache["value"]
+    rows = read_manifest()
+    per_class = {label: {"frames": 0, "sessions": set()} for label in LABELS}
+    per_lighting, sessions = {}, set()
+    for r in rows:
+        c = per_class.setdefault(r["label"], {"frames": 0, "sessions": set()})
+        c["frames"] += 1
+        c["sessions"].add(r["session_id"])
+        per_lighting[r["lighting"]] = per_lighting.get(r["lighting"], 0) + 1
+        sessions.add(r["session_id"])
+    today = now().date().isoformat()
+    try:
+        free = shutil.disk_usage(DATA_DIR if DATA_DIR.exists() else DATA_DIR.parent).free
+    except OSError:
+        free = None
+    value = {
+        "frames_total": len(rows),
+        "sessions_total": len(sessions),
+        "per_class": {k: {"frames": v["frames"], "sessions": len(v["sessions"])} for k, v in per_class.items()},
+        "per_lighting": per_lighting,
+        "first_frame_at": min((r["timestamp"] for r in rows), default=None),
+        "last_frame_at": max((r["timestamp"] for r in rows), default=None),
+        "frames_today": sum(1 for r in rows if r["timestamp"].startswith(today)),
+        "disk_free_bytes": free,
+    }
+    _stats_cache.update(key=key, value=value)
+    return value

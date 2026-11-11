@@ -1,11 +1,21 @@
+# The RoomSense CI pipeline as a DVC DAG (`dvc dag` draws it, `dvc repro` runs it).
+# Each stage reruns only when one of its deps or params changed, so a new
+# nightly data snapshot or a changed hyper-parameter rebuilds exactly what it
+# affects. Run it through `python scripts/run_pipeline.py` to also record the
+# run (status, timings, throughput) for the Pipeline page of the web UI.
 stages:
   prepare:
     cmd: python3 scripts/prepare.py
     deps:
       - scripts/prepare.py
       - data/raw
+    params:
+      - prepare
     outs:
       - data/processed/manifest.csv
+    metrics:
+      - reports/prepare_report.json:
+          cache: false
   preprocess:
     cmd: python scripts/preprocess.py
     deps:
@@ -39,6 +49,7 @@ stages:
     deps:
       - scripts/train.py
       - roomsense/calibration.py
+      - roomsense/evalmetrics.py
       - data/processed/splits.csv
       - data/processed/images
     params:
@@ -62,6 +73,7 @@ stages:
       - roomsense/frames.py
       - roomsense/drift.py
       - roomsense/onnx_eval.py
+      - roomsense/evalmetrics.py
       - models/best.pt
       - models/classes.json
       - models/calibration.json
@@ -79,6 +91,7 @@ stages:
     cmd: python scripts/register.py
     deps:
       - scripts/register.py
+      - roomsense/registry.py
       - models/model.onnx
       - models/model_meta.json
     params:

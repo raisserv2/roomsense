@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RoomSense · Pipeline</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f8a70'/%3E%3Cpath d='M8 22V13l8-6 8 6v9z' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='17' r='2.6' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="logo" aria-hidden="true"></span>RoomSense</a>
+  <nav class="pages" aria-label="Pages">
+    <a href="index.html" data-page="index">Live room</a>
+    <a href="pipeline.html" data-page="pipeline">Pipeline</a>
+    <a href="help.html" data-page="help">Help</a>
+  </nav>
+  <span id="health" class="pill" role="status">Connecting…</span>
+  <nav id="tools" class="tools" aria-label="Other tools"></nav>
+</header>
+
+<div id="offline" class="banner bad" role="alert" hidden><b>RoomSense is offline.</b> <span></span></div>
+<div id="notice" class="banner warn" role="status" hidden></div>
+
+<main class="stack">
+  <section aria-labelledby="h-over">
+    <div class="head">
+      <h2 id="h-over">How the model is made</h2>
+      <span class="hint" id="fresh"></span>
+    </div>
+    <p class="hint lead">From camera picture to the model that is serving: each box is one step. Colours show what happened in the latest run. Select a box to see what it does.</p>
+    <div class="tiles" id="tiles"></div>
+    <ol class="dag" id="dag" aria-label="Pipeline stages"></ol>
+    <p class="hint" id="dagExtra"></p>
+    <div class="card detail" id="stageDetail" hidden></div>
+    <p class="legend keys">
+      <span class="dot ok"></span>ran <span class="dot cached"></span>unchanged, reused <span class="dot failed"></span>failed
+      <span class="dot idle"></span>not reached <span class="dot live"></span>always running
+    </p>
+  </section>
+
+  <div class="grid two">
+    <section class="card" aria-labelledby="h-console">
+      <h2 id="h-console">Controls</h2>
+      <p id="retrainState" class="msg">Loading…</p>
+      <div class="actions">
+        <div>
+          <button type="button" id="btnRetrain">Ask for retraining</button>
+          <p class="hint">Raises the retrain flag. The training computer picks it up the next time it checks and rebuilds the model.</p>
+        </div>
+        <div>
+          <button type="button" id="btnReload" class="quiet">Check for a new model now</button>
+          <p class="hint">The live page normally notices a new model within a minute. This checks straight away.</p>
+        </div>
+        <div>
+          <button type="button" id="btnRollback" class="danger" disabled>Go back to the previous model</button>
+          <p class="hint" id="rollbackHint">Use this if a new model behaves worse than the one before it.</p>
+        </div>
+      </div>
+      <div id="confirm" class="confirm" hidden>
+        <p id="confirmText"></p>
+        <button type="button" id="confirmYes" class="danger">Yes, go back</button>
+        <button type="button" id="confirmNo" class="quiet">Cancel</button>
+      </div>
+      <label id="tokenRow" class="token" hidden>Admin token (this server asks for one)
+        <input type="password" id="token" autocomplete="off" placeholder="RETRAIN_TOKEN">
+      </label>
+      <p id="actionMsg" class="msg" role="status" hidden></p>
+    </section>
+
+    <section class="card" aria-labelledby="h-ingest">
+      <h2 id="h-ingest">Pictures collected (data ingestion)</h2>
+      <div id="ingest"><p class="msg">Loading…</p></div>
+    </section>
+  </div>
+
+  <section class="card" aria-labelledby="h-runs">
+    <div class="head">
+      <h2 id="h-runs">Runs: what succeeded and what failed</h2>
+      <div class="seg" role="tablist" aria-label="Which runs">
+        <button type="button" role="tab" id="tabPipe" aria-selected="true">Pipeline runs</button>
+        <button type="button" role="tab" id="tabTrain" aria-selected="false">Training runs</button>
+      </div>
+    </div>
+    <div class="tablewrap" id="runs"><p class="msg">Loading…</p></div>
+  </section>
+
+  <div class="grid two">
+    <section class="card" aria-labelledby="h-versions">
+      <h2 id="h-versions">Model versions</h2>
+      <div class="tablewrap" id="versions"><p class="msg">Loading…</p></div>
+    </section>
+    <section class="card" aria-labelledby="h-events">
+      <h2 id="h-events">Activity</h2>
+      <ul class="events" id="events"><li class="msg">Loading…</li></ul>
+    </section>
+  </div>
+</main>
+
+<footer>Numbers come from MLflow (runs, model versions) and the capture service, through the RoomSense API. Deeper views: use the tool links at the top.</footer>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script src="pipeline.js"></script>
+</body>
+</html>

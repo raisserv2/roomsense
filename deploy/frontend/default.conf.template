@@ -1,0 +1,46 @@
+# Static web UI + reverse proxy to the API (same origin, so no CORS).
+# The nginx image fills in ${API_UPSTREAM} from the environment at start-up
+# (see deploy/compose.yaml), so the backend address is configuration, not code.
+server {
+    listen 80;
+    client_max_body_size 15m;
+
+    location /api/ {
+        proxy_pass ${API_UPSTREAM}/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_connect_timeout 5s;
+        proxy_read_timeout 60s;
+        # API restarting or down: answer in JSON so the UI can say so nicely.
+        error_page 502 504 = @api_down;
+    }
+
+    location @api_down {
+        default_type application/json;
+        return 503 '{"detail":"The RoomSense API is not answering"}';
+    }
+
+    # Liveness of the frontend itself (Docker healthcheck, Uptime Kuma).
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Request counters for the nginx Prometheus exporter (Docker network only).
+    location = /stub_status {
+        stub_status;
+        access_log off;
+        allow 127.0.0.1;
+        allow 10.0.0.0/8;
+        allow 172.16.0.0/12;
+        allow 192.168.0.0/16;
+        deny all;
+    }
+
+    location / {
+        root /usr/share/nginx/html;
+        try_files $uri $uri.html /index.html;
+        add_header Cache-Control "no-store";
+    }
+}

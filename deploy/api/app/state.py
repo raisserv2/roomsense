@@ -1,4 +1,4 @@
-"""Small persistent state: the retrain request flag (survives restarts)."""
+"""Small persistent state: the retrain request flag and the activity log (both survive restarts)."""
 import json
 import threading
 import time
@@ -53,3 +53,43 @@ class RetrainState:
     def snapshot(self) -> dict:
         with self._lock:
             return json.loads(json.dumps(self.data))
+
+
+class EventLog:
+    """A short, persistent activity log: alerts received, retrains, model loads, failures.
+
+    It backs the "Activity" console of the Pipeline page. Repeating the same
+    event (a model load that fails every minute) only bumps a counter.
+    """
+
+    def __init__(self, path: Path, size: int = 200):
+        self.path, self.size = path, size
+        self._lock = threading.Lock()
+        try:
+            self.events = list(json.loads(path.read_text()))[-size:]
+        except (OSError, ValueError):
+            self.events = []
+
+    def add(self, kind: str, message: str, level: str = "info", **detail) -> None:
+        """level: info | success | warning | error."""
+        now = time.time()
+        with self._lock:
+            last = self.events[-1] if self.events else None
+            if last and last["kind"] == kind and last["message"] == message:
+                last["count"] = last.get("count", 1) + 1
+                last["last_at"] = now
+            else:
+                self.events.append({"at": now, "last_at": now, "kind": kind, "level": level,
+                                    "message": message, "count": 1, **detail})
+                self.events = self.events[-self.size:]
+            try:
+                self.path.parent.mkdir(parents=True, exist_ok=True)
+                tmp = self.path.with_suffix(".tmp")
+                tmp.write_text(json.dumps(self.events))
+                tmp.replace(self.path)
+            except OSError:
+                pass  # the log is a convenience; never fail a request because the disk is full
+
+    def recent(self, limit: int = 50) -> list:
+        with self._lock:
+            return [dict(e) for e in reversed(self.events[-limit:])]

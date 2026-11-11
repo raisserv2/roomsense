@@ -49,6 +49,9 @@ services:
     env_file: .env
     environment:
       MLFLOW_TRACKING_URI: http://mlflow:5000
+      # Fail fast when MLflow is down: the API keeps serving the model it already has.
+      MLFLOW_HTTP_REQUEST_TIMEOUT: "15"
+      MLFLOW_HTTP_REQUEST_MAX_RETRIES: "2"
       STATE_DIR: /state
       ROOT_PATH: /api
     volumes:
@@ -63,10 +66,25 @@ services:
     build: ./frontend
     image: roomsense-frontend
     container_name: roomsense-frontend
+    # The UI knows the backend only through these two settings (loose coupling):
+    #   API_UPSTREAM  where nginx forwards /api/ (any host:port that speaks the REST API)
+    #   API_BASE_URL  what the browser calls: "api/" = through nginx on the same origin,
+    #                 or a full URL of the API (then set CORS_ORIGINS on the API side)
+    environment:
+      API_UPSTREAM: ${API_UPSTREAM:-http://api:8000}
+      API_BASE_URL: ${API_BASE_URL:-api/}
+      LINK_GRAFANA: ${LINK_GRAFANA:-3443}
+      LINK_MLFLOW: ${LINK_MLFLOW:-5443}
+      LINK_PROMETHEUS: ${LINK_PROMETHEUS:-6443}
+      LINK_CAPTURE: ${LINK_CAPTURE:-7443}
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-8200}:80"
     depends_on:
       - api
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
 
   prometheus:
     <<: *restart
@@ -121,6 +139,51 @@ services:
       - "127.0.0.1:${GRAFANA_PORT:-3300}:3000"
     depends_on:
       - prometheus
+
+  # --- exporters: every component of the stack is visible in Prometheus -------
+  # Host metrics of nova (CPU, memory, disks, temperature, battery).
+  node-exporter:
+    <<: *restart
+    image: ${NODE_EXPORTER_IMAGE:-prom/node-exporter:v1.9.1}
+    container_name: roomsense-node-exporter
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|run|var/lib/docker/.+|var/lib/containerd/.+)($$|/)
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+
+  # Per-container CPU, memory and restarts for every container on nova.
+  # (0.55+ understands Docker's containerd image store. With an older Docker,
+  # CADVISOR_IMAGE=gcr.io/cadvisor/cadvisor:v0.49.1 in .env also works.)
+  cadvisor:
+    <<: *restart
+    image: ${CADVISOR_IMAGE:-ghcr.io/google/cadvisor:0.56.2}
+    container_name: roomsense-cadvisor
+    privileged: true
+    devices:
+      - /dev/kmsg
+    command:
+      - --housekeeping_interval=30s
+      - --docker_only=true
+      - --store_container_labels=false
+      - --disable_metrics=percpu,sched,tcp,udp,advtcp,disk,diskIO,hugetlb,referenced_memory,cpu_topology,resctrl,memory_numa,process
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+
+  # Request counts of the frontend's nginx (from its stub_status page).
+  nginx-exporter:
+    <<: *restart
+    image: ${NGINX_EXPORTER_IMAGE:-nginx/nginx-prometheus-exporter:1.4.2}
+    container_name: roomsense-nginx-exporter
+    command:
+      - --nginx.scrape-uri=http://frontend:80/stub_status
+    depends_on:
+      - frontend
 
   # Optional: the registry's champion model behind MLflow's own REST server.
   #   docker compose --profile mlflow-serve up -d mlflow-serve

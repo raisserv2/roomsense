@@ -1,0 +1,24 @@
+# Code style: PEP 8 checked by ruff (`ruff check .`), 120-column lines.
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["data", "models", "reports", "deploy/data", "docs/diagrams/icons"]
+
+[tool.ruff.lint]
+# E/W: pycodestyle (PEP 8), F: pyflakes, I: import order, N: naming, B: likely bugs, BLE: blind excepts
+select = ["E", "W", "F", "I", "N", "B", "BLE"]
+ignore = [
+    "N806",  # upper-case locals are the usual maths notation here (X, W, H)
+    "N812",  # `from torchvision import transforms as T` is the torchvision convention
+    "N817",
+    "B008",  # FastAPI declares parameters with calls in defaults: File(...), Header(...)
+    "B905",  # zip() over lists built together a line earlier; strict= adds noise
+]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*.py" = ["E402"]   # scripts add the repo root to sys.path before importing roomsense
+"tests/*.py" = ["E402"]
+"deploy/api/app/metrics.py" = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["roomsense", "app", "storage", "review", "scripts"]
