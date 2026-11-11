@@ -19,6 +19,7 @@ ignore = [
 "scripts/*.py" = ["E402"]   # scripts add the repo root to sys.path before importing roomsense
 "tests/*.py" = ["E402"]
 "deploy/api/app/metrics.py" = ["E501"]
+"docs/**/*.py" = ["E501"]           # figure layout lines and an embedded stylesheet read better unwrapped
 
 [tool.ruff.lint.isort]
 known-first-party = ["roomsense", "app", "storage", "review", "scripts"]

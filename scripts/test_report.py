@@ -193,7 +193,7 @@ def write_report(tests: dict, lint: dict, criteria: list, api: str) -> None:
         "",
         "| | |",
         "|---|---|",
-        f"| Date | {datetime.now().astimezone():%d %b %Y, %H:%M %Z} |",
+        f"| Date | {datetime.now().astimezone():%d %b %Y, %H:%M (UTC%z)} |",
         f"| Code version (Git commit) | `{git_commit(short=True) or 'unknown'}` |",
         f"| Machine | {platform.node()} · {platform.system()} {platform.machine()} "
         f"· Python {platform.python_version()} |",

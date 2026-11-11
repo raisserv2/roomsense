@@ -2,24 +2,9 @@
 
 Classifies the state of a hostel room (`at_desk`, `lying_in_bed`, `sitting_on_bed`, `in_room`, `empty`, `lights_off`) from a phone camera, with the full MLOps loop around it: versioned data, a reproducible pipeline, a model registry, CPU serving, monitoring, drift alerts and retraining. Everything runs on my own machines. Nothing runs in the cloud.
 
-```
- Honor 7X (IP Webcam) ──frames──▶ capture service ──labelled frames──▶ data/raw (DVC → Seagate on nova)
-                                         │ active session label = ground truth
-                                         ▼
- ┌─────────────────────────── nova (ThinkPad T460, Docker) ───────────────────────────┐
- │  api (FastAPI + ONNX Runtime) ◀── champion model ── mlflow (tracking + registry)  │
- │    │ camera loop: predict every 5 s, drift window, live accuracy                    │
- │    ├── /metrics ──▶ prometheus ──alerts──▶ alertmanager ──▶ Telegram               │
- │    │                     │                        └──webhook──▶ api /hooks (retrain flag)
- │    │                     └──▶ grafana (dashboard)                                   │
- │    └── frontend (nginx: live state, drift, model, upload)                           │
- └─────────────────────────────────────────────────────────────────────────────────────┘
-                                         ▲ register + promote          │ retrain flag
- ┌──────────────── Legion (RTX 4060) ────┴─────────────────────────────▼──────────────┐
- │  dvc repro: prepare → preprocess (Ray) → split → train (MLflow) → export → register │
- │  scripts/retrain.py: polls the flag → dvc pull/repro/push → git push → ack          │
- └─────────────────────────────────────────────────────────────────────────────────────┘
-```
+![RoomSense architecture](docs/diagrams/01-architecture.png)
+
+**Documents** (in [`docs/`](docs/README.md)): [architecture](docs/01-architecture.md) · [high-level design](docs/02-hld.md) · [low-level design with the API specification](docs/03-lld.md) · [test plan](docs/04-test-plan.md) · [test report](docs/05-test-report.md) · [user manual](docs/06-user-manual.md)
 
 All web UIs are reachable only inside the tailnet (Tailscale Serve, HTTPS). Every Docker port is bound to `127.0.0.1`.
 
@@ -77,9 +62,10 @@ cd ~/roomsense && source .venv/bin/activate
 git stash                                # local edits are already in this version
 git pull
 uv pip install -r requirements.txt -r requirements-dev.txt "mlflow==3.17.2"
-pytest                                   # 32 tests
+pytest                                   # 86 tests
+ruff check .                             # PEP 8
 echo 'export MLFLOW_TRACKING_URI=https://nova.tailb5cb87.ts.net:5443' >> ~/.bashrc && source ~/.bashrc
-dvc repro                                # trains, exports, registers + promotes on nova
+python scripts/run_pipeline.py           # dvc repro + records the run (status, timings, throughput) in MLflow
 dvc push && git add dvc.lock reports && git commit -m "pipeline run" && git push
 ```
 
@@ -88,18 +74,35 @@ Within a minute, the UI at `https://nova.tailb5cb87.ts.net:4443` shows the live 
 ### Day-to-day
 | Task | Command |
 |---|---|
-| Rerun only what changed | `dvc repro` |
+| Rerun only what changed, and record the run | `python scripts/run_pipeline.py` (plain `dvc repro` also works, without the record) |
 | Pipeline DAG | `dvc dag` |
 | Compare runs | MLflow UI (`:5443`) or `dvc metrics show` |
 | Retrain when drift is flagged | `python scripts/retrain.py` (or `--watch 10` to keep polling) |
 | Retrain now | `python scripts/retrain.py --force` |
+| Roll back to the previous model | `python scripts/rollback.py` (`--list`, `--to 2`), or the button on the Pipeline page |
 | Run via MLproject | `mlflow run . -e main --env-manager local` (also `-e train -P epochs=3`) |
+| Same environment for dev and test | `mlflow run . -e test` builds the env from `python_env.yaml` and runs the tests in it |
 | MLflow's own model server | `docker compose --profile mlflow-serve up -d mlflow-serve`, then `python scripts/mlflow_serve_request.py photo.jpg` |
 | Tests | `pytest` |
+| Tests + lint + acceptance criteria → `docs/05-test-report.md` | `python scripts/test_report.py` (add `--api https://nova.tailb5cb87.ts.net:4443/api` for the live checks) |
+| Rebuild diagrams / PDFs | `python docs/diagrams/make_diagrams.py` · `python docs/build_pdfs.py` |
 
 ## API
 
-`GET /health` · `GET /model` · `POST /predict` (multipart `file`, `?monitor_frame=true` feeds the drift window) · `GET /latest` · `GET /latest.jpg` · `GET /drift` · `POST /reload` · `POST /hooks/alertmanager` · `GET /retrain` · `POST /retrain/request` · `POST /retrain/ack` · `GET /metrics`. Interactive docs at `/api/docs` on the UI host.
+Full specification with inputs, outputs and error codes: [docs/03-lld.md](docs/03-lld.md). Interactive docs at `/api/docs` on the UI host.
+
+Live: `GET /health` · `GET /model` · `POST /predict` · `GET /latest` · `GET /latest.jpg` · `GET /drift`
+Pipeline console: `GET /pipeline` · `GET /pipeline/runs` · `GET /pipeline/registry` · `POST /pipeline/rollback` · `GET /events`
+Lifecycle: `POST /reload` · `POST /hooks/alertmanager` · `GET /retrain` · `POST /retrain/request` · `POST /retrain/ack`
+Monitoring: `GET /metrics`
+
+## Web UI
+
+Three pages at `https://nova.tailb5cb87.ts.net:4443`: **Live room** (current state, confidence, drift, photo upload), **Pipeline** (the DAG with status and throughput per stage, controls for retrain / reload / rollback, data ingestion totals, every successful and failed run, model versions, activity log) and **Help** (the user manual). The frontend reaches the backend only through `API_UPSTREAM` and `API_BASE_URL` in `deploy/.env`.
+
+## Monitoring
+
+Prometheus scrapes eight jobs: the API, the capture service, the frontend (nginx exporter), the host (node-exporter), all containers (cAdvisor), and Prometheus, Alertmanager and Grafana themselves. 13 alert rules; drift and live-accuracy alerts carry `action=retrain`. The Grafana dashboard has rows for the model, the training pipeline, data ingestion, and components and host.
 
 ## Privacy
 
