@@ -3,60 +3,96 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RoomSense</title>
+<title>RoomSense · Live room</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f8a70'/%3E%3Cpath d='M8 22V13l8-6 8 6v9z' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='17' r='2.6' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header>
-  <h1>RoomSense</h1>
-  <span id="health" class="pill">connecting…</span>
-  <nav id="links"></nav>
+<header class="top">
+  <a class="brand" href="index.html"><span class="logo" aria-hidden="true"></span>RoomSense</a>
+  <nav class="pages" aria-label="Pages">
+    <a href="index.html" data-page="index">Live room</a>
+    <a href="pipeline.html" data-page="pipeline">Pipeline</a>
+    <a href="help.html" data-page="help">Help</a>
+  </nav>
+  <span id="health" class="pill" role="status">Connecting…</span>
+  <nav id="tools" class="tools" aria-label="Other tools"></nav>
 </header>
 
-<main>
-  <section class="card live">
-    <h2>Live room</h2>
-    <div class="frame"><img id="frame" alt="Latest camera frame"><span id="frameAge"></span></div>
-    <div class="state">
-      <div class="label" id="label">–</div>
-      <div class="conf"><div class="bar"><i id="confBar"></i></div><span id="conf">–</span></div>
-      <div class="truth" id="truth"></div>
+<div id="offline" class="banner bad" role="alert" hidden><b>RoomSense is offline.</b> <span></span></div>
+
+<main class="grid">
+  <section class="card live" aria-labelledby="h-live">
+    <h2 id="h-live">What is happening in the room</h2>
+    <div class="frame">
+      <img id="frame" alt="Latest picture from the room camera" hidden>
+      <div id="frameEmpty" class="empty">Waiting for the first picture from the camera…</div>
+      <span id="frameAge" hidden></span>
     </div>
-    <ul class="probs" id="probs"></ul>
+    <div class="state">
+      <p class="kicker">Right now the room looks like</p>
+      <div class="label" id="label">…</div>
+      <p class="meaning" id="meaning">The answer appears here a few seconds after the page opens.</p>
+      <div class="conf" title="How sure the model is about this answer">
+        <span>How sure</span><div class="bar"><i id="confBar"></i></div><b id="conf">–</b>
+      </div>
+      <p class="truth" id="truth"></p>
+    </div>
+    <details class="more">
+      <summary>Show every possibility</summary>
+      <ul class="probs" id="probs"></ul>
+    </details>
   </section>
 
-  <section class="card">
-    <h2>Drift monitor</h2>
-    <div class="psi"><span id="ood">–</span><small>of recent frames are in lighting the model never trained on (alert above <b id="thr">50%</b>)</small></div>
-    <p id="driftMsg" class="msg">Waiting for frames…</p>
-    <canvas id="hist" width="520" height="180" aria-label="Brightness: training vs live"></canvas>
-    <p class="legend"><span class="sw ref"></span>training frames <span class="sw cur"></span>last <b id="win">0</b> live frames</p>
-    <dl class="kv">
-      <dt>PSI (live vs train)</dt><dd id="psi">–</dd>
-      <dt>Brightness (live / train)</dt><dd id="bright">–</dd>
-      <dt>Confidence (live / val)</dt><dd id="confm">–</dd>
-      <dt>Live accuracy</dt><dd id="acc">–</dd>
-      <dt>Retrain</dt><dd id="retrain">–</dd>
-    </dl>
-  </section>
-
-  <section class="card">
-    <h2>Serving model</h2>
-    <dl class="kv" id="model"></dl>
-  </section>
-
-  <section class="card">
-    <h2>Try a photo</h2>
+  <section class="card" aria-labelledby="h-photo">
+    <h2 id="h-photo">Try your own photo</h2>
+    <p class="hint">Pick a photo of the room and RoomSense will say what it sees. The photo is not saved.</p>
     <form id="upload">
-      <input type="file" id="file" accept="image/*" required>
-      <button type="submit">Classify</button>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="image/jpeg,image/png,image/webp">
+        <span id="dropText"><b>Choose a photo</b> or drop one here (JPEG or PNG, up to 15 MB)</span>
+      </label>
+      <button type="submit" id="go" disabled>What does it see?</button>
     </form>
-    <img id="upPreview" alt="">
-    <pre id="upResult"></pre>
+    <div class="upload-out" id="upOut" hidden>
+      <img id="upPreview" alt="The photo you chose">
+      <div>
+        <div class="label small" id="upLabel"></div>
+        <p id="upDetail" class="hint"></p>
+      </div>
+    </div>
+    <p id="upError" class="msg bad" role="alert" hidden></p>
+  </section>
+
+  <section class="card" aria-labelledby="h-drift">
+    <h2 id="h-drift">Is the room still familiar to the model?</h2>
+    <div class="big"><span id="ood">–</span><small>of the last pictures were taken in lighting the model never practised on. Above <b id="thr">50%</b> it asks for retraining.</small></div>
+    <p id="driftMsg" class="msg">Waiting for pictures…</p>
+    <canvas id="hist" width="520" height="170" role="img" aria-label="Brightness of training pictures compared with recent live pictures"></canvas>
+    <p class="legend"><span class="sw ref"></span>pictures it learned from <span class="sw cur"></span>last <b id="win">0</b> live pictures</p>
+    <details class="more">
+      <summary>Details for the curious</summary>
+      <dl class="kv">
+        <dt>Brightness (live / training)</dt><dd id="bright">–</dd>
+        <dt>Confidence (live / validation)</dt><dd id="confm">–</dd>
+        <dt>Checked against your labels</dt><dd id="acc">–</dd>
+        <dt>PSI (Population Stability Index)</dt><dd id="psi">–</dd>
+        <dt>Retraining</dt><dd id="retrain">–</dd>
+      </dl>
+    </details>
+  </section>
+
+  <section class="card" aria-labelledby="h-model">
+    <h2 id="h-model">The model in use</h2>
+    <dl class="kv" id="model"><dt>Status</dt><dd>Loading…</dd></dl>
+    <p class="hint"><a href="pipeline.html">See how it was trained →</a></p>
   </section>
 </main>
 
+<footer>Pictures never leave this room's own computers. <a href="help.html">How RoomSense works</a></footer>
+
 <script src="config.js"></script>
+<script src="common.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

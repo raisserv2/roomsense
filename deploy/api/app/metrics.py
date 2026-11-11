@@ -32,3 +32,20 @@ LAST_FRAME = Gauge("roomsense_last_frame_timestamp_seconds", "Unix time of the l
 RETRAIN_REQUESTS = Counter("roomsense_retrain_requests_total", "Retrain requests raised by drift alerts")
 RETRAIN_PENDING = Gauge("roomsense_retrain_pending", "1 while a retrain request is waiting for the Legion")
 RETRAINS_DONE = Counter("roomsense_retrains_completed_total", "Retrains acknowledged by the training machine")
+
+# --- the API itself ---
+HTTP_REQUESTS = Counter("roomsense_http_requests_total", "API requests", ["method", "path", "status"])
+HTTP_LATENCY = Histogram("roomsense_http_request_seconds", "API request handling time", ["path"],
+                         buckets=(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10))
+DEPENDENCY_UP = Gauge("roomsense_dependency_up", "1 when the API can reach a service it depends on", ["dependency"])
+ROLLBACKS = Counter("roomsense_model_rollbacks_total", "Champion rollbacks done through the API")
+
+# --- the training pipeline (from the latest pipeline run recorded in MLflow) ---
+PIPE_LAST_OK = Gauge("roomsense_pipeline_last_run_success", "1 when the latest pipeline run succeeded, 0 when it failed")
+PIPE_LAST_TS = Gauge("roomsense_pipeline_last_run_timestamp_seconds", "Unix time the latest pipeline run started")
+PIPE_SECONDS = Gauge("roomsense_pipeline_last_run_seconds", "Duration of the latest pipeline run")
+PIPE_RUNS = Gauge("roomsense_pipeline_runs", "Recorded pipeline runs by result", ["result"])
+STAGE_SECONDS = Gauge("roomsense_pipeline_stage_seconds", "Duration of each stage in its latest execution", ["stage"])
+STAGE_THROUGHPUT = Gauge("roomsense_pipeline_stage_throughput", "Items per second of each stage (frames, images)", ["stage"])
+RAY_FPS = Gauge("roomsense_pipeline_ray_resize_fps", "Frames per second of the Ray resize step in preprocess")
+REGISTRY_VERSIONS = Gauge("roomsense_registry_versions", "Model versions in the MLflow registry")

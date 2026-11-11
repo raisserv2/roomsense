@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RoomSense · Help</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231f8a70'/%3E%3Cpath d='M8 22V13l8-6 8 6v9z' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='17' r='2.6' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="index.html"><span class="logo" aria-hidden="true"></span>RoomSense</a>
+  <nav class="pages" aria-label="Pages">
+    <a href="index.html" data-page="index">Live room</a>
+    <a href="pipeline.html" data-page="pipeline">Pipeline</a>
+    <a href="help.html" data-page="help">Help</a>
+  </nav>
+  <span id="health" class="pill" role="status">Connecting…</span>
+  <nav id="tools" class="tools" aria-label="Other tools"></nav>
+</header>
+
+<main class="prose">
+  <h1>How to use RoomSense</h1>
+  <p class="lead">RoomSense looks at a picture of the room every five seconds and says what is going on: someone at the desk, someone in bed, an empty room, or a dark room. You don't need to install or set up anything. Open the page and read it.</p>
+
+  <nav class="toc" aria-label="On this page">
+    <a href="#states">The six room states</a><a href="#live">The Live room page</a><a href="#photo">Try your own photo</a>
+    <a href="#familiar">"Still familiar?"</a><a href="#pipeline">The Pipeline page</a><a href="#trouble">If something looks wrong</a><a href="#privacy">Privacy</a>
+  </nav>
+
+  <h2 id="states">The six room states</h2>
+  <table>
+    <thead><tr><th>RoomSense says</th><th>It means</th></tr></thead>
+    <tbody>
+      <tr><td><b>at desk</b></td><td>Someone is sitting at the desk.</td></tr>
+      <tr><td><b>lying in bed</b></td><td>Someone is lying down in bed.</td></tr>
+      <tr><td><b>sitting on bed</b></td><td>Someone is sitting up on the bed.</td></tr>
+      <tr><td><b>in room</b></td><td>Someone is in the room, standing or moving about.</td></tr>
+      <tr><td><b>empty</b></td><td>Nobody is in the room and it is lit.</td></tr>
+      <tr><td><b>lights off</b></td><td>The room is dark.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="live">The Live room page</h2>
+  <ol>
+    <li><b>The picture</b> is the newest one from the camera. The small tag in its corner says <i>live</i>, or how many seconds old it is.</li>
+    <li><b>The big words</b> under it are the answer, with one sentence saying what that means.</li>
+    <li><b>How sure</b> is the model's confidence. Under 60% the bar turns orange and the page tells you the model is unsure.</li>
+    <li><b>Show every possibility</b> opens the full list, with how likely each state is.</li>
+    <li><b>The coloured pill</b> at the top of every page is the overall status: green means working, orange means something needs attention (no model yet, or the camera stopped), red means the page can't reach RoomSense.</li>
+  </ol>
+  <p>The page refreshes by itself every three seconds. You never need to reload it.</p>
+
+  <h2 id="photo">Try your own photo</h2>
+  <ol>
+    <li>Select <b>Choose a photo</b> (or drag a photo onto the dotted box).</li>
+    <li>Select <b>What does it see?</b></li>
+    <li>The answer appears next to your photo, with how sure the model is.</li>
+  </ol>
+  <p>JPEG and PNG photos up to 15 MB work. The photo is used once to answer and is not stored. RoomSense was trained on one particular room from one camera position, so photos of other rooms will get confident-sounding but meaningless answers.</p>
+
+  <h2 id="familiar">"Is the room still familiar to the model?"</h2>
+  <p>A model only knows what it has practised on. If it learned with the tube light on and you switch the light off, its answers get worse. RoomSense watches for that:</p>
+  <ul>
+    <li>The <b>big percentage</b> is the share of recent pictures taken in lighting the model never practised on.</li>
+    <li><b>Green message:</b> everything looks as it did during training.</li>
+    <li><b>Orange message:</b> some pictures are unusual. Nothing to do.</li>
+    <li><b>Red message:</b> more than half of the recent pictures are unfamiliar. After five minutes RoomSense sends an alert and asks the training computer to retrain. When the new model arrives, the number drops back by itself.</li>
+  </ul>
+  <p>The bar chart compares the brightness of the pictures it learned from (grey) with the last ten minutes of live pictures (green). When the green bars sit where there are no grey bars, the room is in unfamiliar lighting.</p>
+
+  <h2 id="pipeline">The Pipeline page</h2>
+  <p>This page shows how the model is made and lets you manage it.</p>
+  <ul>
+    <li><b>The row of boxes</b> is the production line, left to right: collect pictures, check them, tidy them up, split them, train, convert, register, serve. A green dot means the step ran, blue that nothing changed so the earlier result was reused, red that it failed. Select a box to read what the step does.</li>
+    <li><b>The tiles</b> above the boxes give the headline numbers: whether the latest run succeeded, how long the pipeline takes, and how fast it works through pictures.</li>
+    <li><b>Controls</b>: <i>Ask for retraining</i> queues a rebuild of the model. <i>Check for a new model now</i> makes the live page pick up a new model immediately. <i>Go back to the previous model</i> undoes the last model change. It asks you to confirm first, and you can switch again later.</li>
+    <li><b>Runs</b> lists every time the pipeline ran, with a green ✓ or a red ✗ and, for a failure, the step that failed and why.</li>
+    <li><b>Model versions</b> lists every model ever registered. The one marked <i>in use</i> is answering on the Live room page.</li>
+    <li><b>Activity</b> is a diary: alerts, retraining requests, model changes, camera drop-outs.</li>
+  </ul>
+
+  <h2 id="trouble">If something looks wrong</h2>
+  <table>
+    <thead><tr><th>What you see</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td>Red pill: <b>Offline</b></td><td>Your device is not on the private network. Open the Tailscale app, switch it on, and wait a few seconds. The page reconnects by itself.</td></tr>
+      <tr><td>Orange pill: <b>camera offline</b></td><td>The camera phone stopped answering. Check that it is charging, connected to the room Wi-Fi, and that the IP Webcam app is open with "Start server" running.</td></tr>
+      <tr><td>Orange pill: <b>No model yet</b></td><td>The model has not been trained on this server yet. It appears by itself after the first training run. Nothing to do on this page.</td></tr>
+      <tr><td>The picture is old (tag shows many seconds)</td><td>Same as "camera offline": check the camera phone.</td></tr>
+      <tr><td>The answer is clearly wrong</td><td>One wrong answer is normal. If it stays wrong, look at "Is the room still familiar?" If that is red, retraining is already on its way. Otherwise select <b>Ask for retraining</b> on the Pipeline page.</td></tr>
+      <tr><td>"That file is not a photo"</td><td>Choose a JPEG or PNG picture. Videos and documents don't work.</td></tr>
+      <tr><td>A button asks for an <b>admin token</b></td><td>That action is protected on this server. Ask the owner for the token, type it in the box that appeared, and select the button again.</td></tr>
+      <tr><td>A new model made things worse</td><td>Pipeline page → <b>Go back to the previous model</b> → confirm.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 id="privacy">Privacy</h2>
+  <p>The camera pictures stay on the two computers in this room and on their own backup drive. Nothing is sent to any cloud service, and the pages only open for devices on the owner's private Tailscale network. Pictures are saved only while the owner runs a labelled recording session. The live camera view on this site is not recorded.</p>
+
+  <p class="hint">The full manual with screenshots is <code>docs/06-user-manual.md</code> in the project repository.</p>
+</main>
+
+<script src="config.js"></script>
+<script src="common.js"></script>
+<script>refreshStatus(); setInterval(refreshStatus, 10000);</script>
+</body>
+</html>

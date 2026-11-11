@@ -4,9 +4,11 @@ import os
 import threading
 import time
 
+import capmetrics as M
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel
 
 import storage
@@ -37,8 +39,10 @@ def capture_loop() -> None:
             session = state["session"]
         if session:
             try:
+                t0 = time.perf_counter()
                 resp = requests.get(CAM_URL, auth=CAM_AUTH, timeout=5)
                 resp.raise_for_status()
+                M.FETCH_SECONDS.observe(time.perf_counter() - t0)
                 now = storage.now()
                 folder = storage.DATA_DIR / session["id"]
                 folder.mkdir(parents=True, exist_ok=True)
@@ -52,12 +56,18 @@ def capture_loop() -> None:
                     state["frames"] += 1
                     state["last_frame"] = resp.content
                     state["last_error"] = None
+                M.FRAMES.labels(session["label"], session["lighting"]).inc()
+                M.LAST_FRAME.set(time.time())
             except requests.RequestException as e:
                 log.warning("Camera fetch failed: %s", e)
+                M.CAMERA_ERRORS.inc()
                 with state_lock:
                     state["last_error"] = str(e)
-            except Exception:
+            except Exception as e:  # noqa: BLE001  (the loop must survive a full disk or a bad CSV)
                 log.exception("Unexpected error while saving a frame")
+                M.SAVE_ERRORS.inc()
+                with state_lock:
+                    state["last_error"] = f"could not save the frame: {e}"
         time.sleep(INTERVAL)
 
 
@@ -71,12 +81,14 @@ def start_session(req: SessionRequest):
     try:
         storage.validate_combo(req.label, req.lighting)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
     session_id = storage.now().strftime("s%Y%m%d-%H%M%S")
     with state_lock:
         state["session"] = {"id": session_id, "label": req.label, "lighting": req.lighting}
         state["frames"] = 0
     storage.active["session_id"] = session_id
+    M.SESSION_ACTIVE.set(1)
+    M.SESSIONS.labels(req.label).inc()
     log.info("Session %s started: %s / %s", session_id, req.label, req.lighting)
     return {"session_id": session_id}
 
@@ -87,6 +99,7 @@ def stop_session():
         session, frames = state["session"], state["frames"]
         state["session"] = None
     storage.active["session_id"] = None
+    M.SESSION_ACTIVE.set(0)
     log.info("Session stopped: %s (%d frames)", session["id"] if session else None, frames)
     return {"stopped": session, "frames": frames}
 
@@ -96,6 +109,29 @@ def status():
     with state_lock:
         return {"session": state["session"], "frames": state["frames"],
                 "last_error": state["last_error"], "interval_seconds": INTERVAL}
+
+
+@app.get("/stats")
+def stats():
+    """Dataset totals for the pipeline console: frames and sessions per class, last frame, free disk."""
+    with state_lock:
+        recording = state["session"]
+    return {**storage.dataset_stats(), "recording": recording, "interval_seconds": INTERVAL}
+
+
+@app.get("/metrics")
+def metrics():
+    """Prometheus scrape endpoint. Dataset gauges are refreshed from the (cached) stats."""
+    try:
+        s = storage.dataset_stats()
+        for label, c in s["per_class"].items():
+            M.DATASET_FRAMES.labels(label).set(c["frames"])
+            M.DATASET_SESSIONS.labels(label).set(c["sessions"])
+        if s["disk_free_bytes"] is not None:
+            M.DISK_FREE.set(s["disk_free_bytes"])
+    except OSError:
+        log.warning("Could not refresh the dataset gauges")
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/latest.jpg")
@@ -150,6 +186,6 @@ setInterval(refresh,3000);refresh();
 
 @app.get("/", response_class=HTMLResponse)
 def page():
-    buttons = "".join(f'<button class="lab" onclick="startS(\'{l}\')">{l}</button>' for l in storage.LABELS)
-    lights = "".join(f"<option>{l}</option>" for l in storage.LIGHTING)
+    buttons = "".join(f'<button class="lab" onclick="startS(\'{lab}\')">{lab}</button>' for lab in storage.LABELS)
+    lights = "".join(f"<option>{opt}</option>" for opt in storage.LIGHTING)
     return PAGE.replace("BUTTONS", buttons).replace("LIGHTOPTIONS", lights)

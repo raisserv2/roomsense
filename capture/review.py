@@ -51,7 +51,7 @@ def _signature(path: Path):
         with Image.open(path) as im:
             im.draft("L", (80, 60))
             return im.convert("L").resize((32, 24)).tobytes()
-    except Exception:
+    except Exception:  # noqa: BLE001  (any unreadable image just gets no signature)
         log.warning("Could not read %s", path)
         return None
 
@@ -127,9 +127,9 @@ def trash(req: TrashRequest):
     try:
         return storage.trash_frames(req.paths, req.reason)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
     except PermissionError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail=str(e)) from None
 
 
 @router.get("/api/trash")
@@ -142,7 +142,7 @@ def restore(action_id: str):
     try:
         return {"frames": storage.restore(action_id)}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
 
 
 @router.post("/api/relabel")
@@ -150,9 +150,9 @@ def relabel(req: RelabelRequest):
     try:
         return {"frames": storage.relabel(req.paths, req.label)}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
     except PermissionError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail=str(e)) from None
 
 
 class LightingRequest(BaseModel):
@@ -165,6 +165,6 @@ def change_lighting(req: LightingRequest):
     try:
         return {"frames": storage.set_lighting(req.paths, req.lighting)}
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from None
     except PermissionError as e:
-        raise HTTPException(status_code=409, detail=str(e))
+        raise HTTPException(status_code=409, detail=str(e)) from None

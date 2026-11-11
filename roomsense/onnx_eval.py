@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 
 from roomsense import frames
+from roomsense.evalmetrics import macro_f1_present
 
 IMAGES = Path("data/processed/images")
 
@@ -35,16 +36,12 @@ def predict_paths(sess, paths, size: int = 224, batch: int = 32) -> np.ndarray:
 
 
 def macro_f1(sess, df, classes, size: int = 224) -> dict:
-    from sklearn.metrics import accuracy_score, f1_score
+    """Macro-F1 (over the classes present in `df`) and accuracy of an ONNX model on a split."""
     known = df[df.label.isin(classes)]
     probs = predict_paths(sess, known.path.tolist(), size)
     idx = {c: i for i, c in enumerate(classes)}
     y = known.label.map(idx).to_numpy()
     p = probs.argmax(1) if len(probs) else np.array([], dtype=int)
-    labels = list(range(len(classes)))
-    return {
-        "macro_f1": float(f1_score(y, p, average="macro", labels=labels, zero_division=0)),
-        "accuracy": float(accuracy_score(y, p)) if len(y) else 0.0,
-        "n": int(len(y)),
-        "confidence_mean": float(probs.max(1).mean()) if len(probs) else None,
-    }
+    out = macro_f1_present(y, p, classes)
+    out["confidence_mean"] = float(probs.max(1).mean()) if len(probs) else None
+    return out

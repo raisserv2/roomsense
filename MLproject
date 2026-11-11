@@ -1,11 +1,18 @@
 name: roomsense
 
-# Run with:  mlflow run . -e <entry point> --env-manager local
-# (the Legion's .venv already has every dependency; see requirements.txt)
+# One environment definition for development, training and testing:
+#   mlflow run . -e test                       # builds the env from python_env.yaml, runs the tests in it
+#   mlflow run . -e main                       # the whole pipeline in that same env
+# On the Legion the project .venv is built from the same requirements files, so
+# day to day `--env-manager local` (reuse the active .venv) is the fast path:
+#   mlflow run . -e main --env-manager local
+python_env: python_env.yaml
+
 entry_points:
   main:
-    # The whole reproducible pipeline: prepare -> preprocess -> split -> train -> export -> register
-    command: "dvc repro"
+    # The whole reproducible pipeline: prepare -> preprocess -> split -> train -> export -> register,
+    # recorded as one pipeline run (status, timings, throughput) for the web UI.
+    command: "python scripts/run_pipeline.py --trigger mlproject"
   train:
     parameters:
       epochs: {type: float, default: 8}
@@ -18,3 +25,8 @@ entry_points:
     command: "python scripts/register.py"
   retrain:
     command: "python scripts/retrain.py --force"
+  rollback:
+    command: "python scripts/rollback.py"
+  test:
+    # Unit + API tests and the test report, in the same environment as training.
+    command: "python scripts/test_report.py"

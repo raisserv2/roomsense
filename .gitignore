@@ -18,3 +18,6 @@ models/train_run.json
 .pytest_cache/
 deploy/.env
 deploy/data/
+reports/tests/
+.ruff_cache/
+node_modules/

@@ -70,3 +70,44 @@ def test_latest_without_camera(client):
 def test_reload_local_model(client):
     r = client.post("/reload?force=true").json()
     assert r["version"] == "local" and r["error"] is None
+
+
+def test_predict_rejects_empty_and_unknown_truth(client):
+    assert client.post("/predict", files={"file": ("f.jpg", b"", "image/jpeg")}).status_code == 400
+    r = client.post("/predict?monitor_frame=true&truth=flying", files={"file": ("f.jpg", jpeg(120), "image/jpeg")})
+    assert r.status_code == 422 and "Unknown truth label" in r.json()["detail"]
+
+
+def test_predict_without_a_file_is_a_validation_error(client):
+    assert client.post("/predict").status_code == 422
+
+
+def test_webhook_rejects_bodies_that_are_not_json(client):
+    r = client.post("/hooks/alertmanager", content=b"not json", headers={"Content-Type": "application/json"})
+    assert r.status_code == 400
+    assert client.post("/retrain/ack", content=b"[1, 2]",
+                       headers={"Content-Type": "application/json"}).status_code == 400
+
+
+def test_manual_retrain_request_is_idempotent(client):
+    assert client.post("/retrain/request?reason=test").json() == {"raised": True}
+    assert client.post("/retrain/request?reason=test").json() == {"raised": False}
+    assert client.post("/retrain/ack", json={"version": "3", "promoted": False}).json()["requested"] is False
+
+
+def test_health_reports_uptime_and_camera_state(client):
+    h = client.get("/health").json()
+    assert h["camera_enabled"] is False and h["uptime_seconds"] >= 0
+
+
+def test_unknown_route_is_a_clean_404(client):
+    r = client.get("/nope")
+    assert r.status_code == 404 and r.json() == {"detail": "Not Found"}
+
+
+def test_openapi_documents_every_endpoint(client):
+    paths = client.get("/openapi.json").json()["paths"]
+    for p in ["/health", "/model", "/predict", "/latest", "/latest.jpg", "/drift", "/reload", "/hooks/alertmanager",
+              "/retrain", "/retrain/request", "/retrain/ack", "/metrics", "/pipeline", "/pipeline/runs",
+              "/pipeline/registry", "/pipeline/rollback", "/events"]:
+        assert p in paths, p

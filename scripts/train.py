@@ -20,10 +20,12 @@ import argparse
 import json
 import os
 import sys
+import time
 import warnings
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import mlflow  # noqa: E402
@@ -34,13 +36,18 @@ import torch  # noqa: E402
 import torch.nn as nn  # noqa: E402
 import yaml  # noqa: E402
 from PIL import Image  # noqa: E402
-from sklearn.metrics import accuracy_score, confusion_matrix, f1_score  # noqa: E402
+from sklearn.metrics import confusion_matrix  # noqa: E402
 from torch.utils.data import DataLoader, Dataset, WeightedRandomSampler  # noqa: E402
 from torchvision import models  # noqa: E402
 from torchvision import transforms as T  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from roomsense import calibration  # noqa: E402
+from roomsense.evalmetrics import macro_f1_present  # noqa: E402
+from roomsense.runlog import provenance, start_stage  # noqa: E402
+
+stage = start_stage("train")
+log = stage.log
 
 P = yaml.safe_load(open("params.yaml"))["train"]
 ap = argparse.ArgumentParser()
@@ -73,7 +80,7 @@ eval_tf = T.Compose([T.Resize(size), *norm])
 class DS(Dataset):
     def __init__(self, d, tf):
         self.p = d.path.tolist()
-        self.y = [idx[l] for l in d.label]
+        self.y = [idx[label] for label in d.label]
         self.tf = tf
 
     def __len__(self):
@@ -134,15 +141,19 @@ def predict(dl):
     return torch.cat(out).numpy(), torch.cat(ys).numpy()
 
 
-def macro_f1(y, p):
-    return f1_score(y, p, average="macro", labels=list(range(len(classes))), zero_division=0)
+def macro_f1(y, p) -> float:
+    """Macro-F1 over the classes that occur in `y` (see roomsense/evalmetrics.py)."""
+    return macro_f1_present(y, p, classes)["macro_f1"]
+
+
+seen = {"images": 0, "seconds": 0.0}  # training throughput
 
 
 def run_epoch(opt, freeze_backbone: bool) -> float:
     model.train()
     if freeze_backbone:
         model.features.eval()  # keep BatchNorm statistics of the frozen backbone
-    tot, n = 0.0, 0
+    tot, n, t0 = 0.0, 0, time.perf_counter()
     for x, y in tr:
         x, y = x.to(dev, non_blocking=True), y.to(dev, non_blocking=True)
         opt.zero_grad()
@@ -153,6 +164,8 @@ def run_epoch(opt, freeze_backbone: bool) -> float:
         scaler.update()
         tot += loss.item() * len(y)
         n += len(y)
+    seen["images"] += n
+    seen["seconds"] += time.perf_counter() - t0
     return tot / max(n, 1)
 
 
@@ -168,6 +181,14 @@ with mlflow.start_run(run_name="train") as run:
     mlflow.log_param("classes", ",".join(classes))
     mlflow.log_param("train_frames", len(tr_df))
     mlflow.log_dict(yaml.safe_load(open("params.yaml")), "params.yaml")
+    # Reproducibility: this run = one Git commit + one DVC data version + this run ID.
+    prov = provenance()
+    mlflow.set_tags({"git_commit": prov["git_commit"], "git_dirty": str(prov["git_dirty"]).lower(),
+                     "data_version": prov["data_version"], "device": dev, "stage": "train"})
+    for extra in ("dvc.lock", "reports/prepare_report.json", "reports/preprocess_report.json",
+                  "reports/split_report.json"):
+        if Path(extra).exists():
+            mlflow.log_artifact(extra, artifact_path="pipeline")
 
     best, best_ep, step, stale = -1.0, -1, 0, 0
     phases = [("head", int(P.get("freeze_epochs", 0)), float(P.get("head_lr", P["lr"])), True),
@@ -187,7 +208,7 @@ with mlflow.start_run(run_name="train") as run:
             lv, yv = predict(va)
             f1 = macro_f1(yv, lv.argmax(1)) if len(yv) else 0.0
             mlflow.log_metrics({"train_loss": loss, "val_macro_f1": f1, "lr": sched.get_last_lr()[0]}, step=step)
-            print(f"[{phase}] epoch {ep + 1}/{n_ep}  loss {loss:.4f}  val macro-F1 {f1:.4f}", flush=True)
+            log.info("[%s] epoch %d/%d  loss %.4f  val macro-F1 %.4f", phase, ep + 1, n_ep, loss, f1)
             step += 1
             if f1 > best:
                 best, best_ep, stale = f1, step, 0
@@ -195,7 +216,7 @@ with mlflow.start_run(run_name="train") as run:
             else:
                 stale += 1
                 if phase == "finetune" and stale >= int(P.get("patience", 99)):
-                    print(f"early stop: no val improvement for {stale} epochs")
+                    log.info("early stop: no val improvement for %d epochs", stale)
                     break
 
     model.load_state_dict(torch.load("models/best.pt", map_location=dev))
@@ -208,13 +229,19 @@ with mlflow.start_run(run_name="train") as run:
     pred = lt.argmax(1)
     labels = list(range(len(classes)))
     cm = confusion_matrix(yt, pred, labels=labels)
+    test = macro_f1_present(yt, pred, classes)
+    if test["classes_absent"]:
+        log.warning("classes with no test frames (left out of macro-F1): %s", test["classes_absent"])
     metrics = {
         "best_val_macro_f1": best,
         "best_epoch": best_ep,
-        "test_macro_f1": macro_f1(yt, pred),
-        "test_accuracy": accuracy_score(yt, pred),
-        "test_per_class_f1": dict(zip(classes, f1_score(yt, pred, average=None, labels=labels,
-                                                        zero_division=0).tolist())),
+        "test_macro_f1": test["macro_f1"],
+        "test_accuracy": test["accuracy"],
+        "test_per_class_f1": test["per_class_f1"],
+        "test_support": test["support"],
+        "test_classes_absent": test["classes_absent"],
+        "train_seconds": round(seen["seconds"], 2),
+        "train_images_per_s": round(seen["images"] / max(seen["seconds"], 1e-9), 1),
         "temperature": temp,
         "test_ece_before_calibration": calibration.ece(pt_raw, yt),
         "test_ece_after_calibration": calibration.ece(pt_cal, yt),
@@ -256,5 +283,7 @@ with mlflow.start_run(run_name="train") as run:
             example = np.zeros((1, 3, P["img_h"], P["img_w"]), dtype=np.float32)
             mlflow.pytorch.log_model(model.cpu().eval(), name="torch-model", input_example=example)
         except Exception as e:  # noqa: BLE001
-            warnings.warn(f"PyTorch model not logged to MLflow: {e}")
-    print(json.dumps({k: v for k, v in metrics.items() if k != "confusion_matrix"}, indent=2))
+            warnings.warn(f"PyTorch model not logged to MLflow: {e}", stacklevel=1)
+    log.info("metrics: %s", json.dumps({k: v for k, v in metrics.items() if k != "confusion_matrix"}))
+
+stage.done(items=seen["images"], unit="images", test_macro_f1=metrics["test_macro_f1"], run_id=run.info.run_id)

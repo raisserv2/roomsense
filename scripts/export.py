@@ -11,7 +11,6 @@
 6. Write models/model_meta.json and reports/export_report.json.
 """
 import json
-import subprocess
 import sys
 import time
 from datetime import datetime, timezone
@@ -27,6 +26,10 @@ from torchvision import models
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from roomsense import drift, frames  # noqa: E402
 from roomsense.onnx_eval import load_bgr, macro_f1, session  # noqa: E402
+from roomsense.runlog import provenance, start_stage  # noqa: E402
+
+stage = start_stage("export")
+log = stage.log
 
 PARAMS = yaml.safe_load(open("params.yaml"))
 P = PARAMS["export"]
@@ -65,12 +68,13 @@ exporter = "torchscript"
 try:
     torch.onnx.export(model, dummy, str(OUT), dynamo=False, **kw)
 except Exception as e:  # noqa: BLE001  (old exporter removed/broken: use the dynamo one)
-    print(f"TorchScript exporter failed ({e}); falling back to the dynamo exporter")
+    log.warning("TorchScript exporter failed (%s); falling back to the dynamo exporter", e)
     exporter = "dynamo"
     torch.onnx.export(model, dummy, str(OUT), dynamo=True, external_data=False,
                       input_names=["input"], output_names=["logits"],
                       dynamic_shapes={"x": {0: torch.export.Dim("batch", min=1, max=256)}})
 import onnx  # noqa: E402
+
 onnx.checker.check_model(onnx.load(str(OUT)))
 
 # 2. parity on real frames
@@ -111,10 +115,7 @@ bright = [frames.brightness(load_bgr(p), SIZE) for p in train_paths]
 reference = drift.reference_stats(bright)
 reference["confidence_mean"] = valm["confidence_mean"]
 
-try:
-    commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True).stdout.strip()
-except OSError:
-    commit = ""
+prov = provenance()
 train_metrics = json.load(open("reports/metrics.json")) if Path("reports/metrics.json").exists() else {}
 meta = {
     "name": "roomsense",
@@ -126,12 +127,14 @@ meta = {
     "temperature": TEMP,
     "reference": reference,
     "metrics": {"test_macro_f1": test["macro_f1"], "test_accuracy": test["accuracy"],
-                "val_macro_f1": valm["macro_f1"],
+                "val_macro_f1": valm["macro_f1"], "test_per_class_f1": test["per_class_f1"],
+                "test_classes_absent": test["classes_absent"],
                 "torch_test_macro_f1": train_metrics.get("test_macro_f1")},
     "data_include": (PARAMS.get("data") or {}).get("include") or {},
     "train_frames": len(train_paths),
     "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-    "git_commit": commit,
+    "git_commit": prov["git_commit"],
+    "data_version": prov["data_version"],
 }
 META.write_text(json.dumps(meta, indent=2))
 report = {
@@ -147,9 +150,12 @@ report = {
     "bench_threads": P["bench_threads"],
     "onnx_test_macro_f1": test["macro_f1"],
     "onnx_test_accuracy": test["accuracy"],
+    "onnx_test_classes_absent": test["classes_absent"],
+    "test_frames": test["n"],
     "reference_brightness_mean": reference["brightness_mean"],
     "reference_confidence_mean": reference["confidence_mean"],
 }
 REPORT.parent.mkdir(exist_ok=True)
 REPORT.write_text(json.dumps(report, indent=2))
-print(json.dumps(report, indent=2))
+log.info("export report: %s", json.dumps(report))
+stage.done(items=test["n"] + valm["n"] + len(train_paths), latency_ms_p95=report["latency_ms_p95"])

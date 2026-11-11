@@ -14,8 +14,11 @@ log = logging.getLogger("monitor")
 
 
 class Monitor:
-    def __init__(self, models):
+    """Feeds every frame to the model, the Prometheus metrics and the drift window."""
+
+    def __init__(self, models, on_event=None):
         self.models = models
+        self.on_event = on_event or (lambda *a, **k: None)
         self.window = drift.Window(S.DRIFT_WINDOW)
         self.latest = None          # last camera prediction (dict)
         self.latest_jpeg = None     # last camera frame bytes
@@ -24,6 +27,7 @@ class Monitor:
 
     # --- shared by camera frames and monitored uploads -------------------
     def observe(self, img_bgr, source: str, truth=None, jpeg: bytes = None) -> dict:
+        """Predict one frame and record it. `truth` is the capture-session label, when one is recording."""
         model = self.models.current()
         if model is None:
             raise RuntimeError("No model loaded yet")
@@ -49,6 +53,7 @@ class Monitor:
         return res
 
     def drift_summary(self) -> dict:
+        """The drift window compared with the serving model's training reference."""
         model = self.models.current()
         ref = model.reference if model else {}
         out = drift.summarise(self.window, ref, S.LOW_CONFIDENCE, S.OOD_MIN_SHARE)
@@ -78,8 +83,10 @@ class Monitor:
             return None
         try:
             s = requests.get(S.CAPTURE_STATUS_URL, timeout=2).json()
+            M.DEPENDENCY_UP.labels("capture").set(1)
             return (s.get("session") or {}).get("label")
         except (requests.RequestException, ValueError):
+            M.DEPENDENCY_UP.labels("capture").set(0)
             return None
 
     def camera_once(self) -> None:
@@ -89,10 +96,18 @@ class Monitor:
             r.raise_for_status()
             img = frames.decode_jpeg(r.content)
         except (requests.RequestException, ValueError) as e:
+            if self.camera_error is None:
+                log.warning("camera fetch failed: %s", e)
+                self.on_event("camera", "Camera is not answering", "warning")
             self.camera_error = str(e)
             M.CAMERA_ERRORS.inc()
+            M.DEPENDENCY_UP.labels("camera").set(0)
             return
+        if self.camera_error is not None:
+            log.info("camera is back")
+            self.on_event("camera", "Camera is back", "success")
         self.camera_error = None
+        M.DEPENDENCY_UP.labels("camera").set(1)
         M.LAST_FRAME.set(time.time())
         if self.models.current() is None:
             with self._lock:

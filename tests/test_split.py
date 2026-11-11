@@ -1,6 +1,7 @@
 """The split stage must never leak a session across train/val/test."""
 import csv
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -26,8 +27,10 @@ def run_split(tmp_path, include=None):
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()
         w.writerows(rows)
+    # the copied script imports the shared `roomsense` package from the repo
+    env = {**os.environ, "PYTHONPATH": str(ROOT)}
     subprocess.run([sys.executable, "scripts/split.py", "--seed", "42"], cwd=tmp_path, check=True,
-                   capture_output=True)
+                   capture_output=True, env=env)
     with open(tmp_path / "data/processed/splits.csv", newline="") as fh:
         out = list(csv.DictReader(fh))
     return out, json.loads((tmp_path / "reports/split_report.json").read_text())
@@ -47,6 +50,12 @@ def test_include_filter(tmp_path):
     rows, report = run_split(tmp_path, include={"lighting": ["tube_on"]})
     assert {r["lighting"] for r in rows} == {"tube_on"}
     assert report["frames_before_filter"] == 300 and len(rows) == 150
+
+
+def test_split_records_its_stage_timing(tmp_path):
+    run_split(tmp_path)
+    record = json.loads((tmp_path / "reports/stages/split.json").read_text())
+    assert record["status"] == "ok" and record["items"] == 300 and record["throughput_per_s"] > 0
 
 
 def test_split_is_reproducible(tmp_path):

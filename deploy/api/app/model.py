@@ -20,6 +20,8 @@ log = logging.getLogger("model")
 
 
 class Model:
+    """One loaded ONNX model with its metadata (classes, input size, drift reference)."""
+
     def __init__(self, onnx_path: Path, meta: dict, version: str, run_id: str, uri: str):
         so = ort.SessionOptions()
         so.intra_op_num_threads = S.ORT_THREADS
@@ -33,6 +35,7 @@ class Model:
         self.loaded_at = time.time()
 
     def predict(self, img_bgr: np.ndarray) -> dict:
+        """Classify one BGR frame: label, confidence, all class probabilities, latency."""
         x = frames.to_input(img_bgr, self.size)
         t0 = time.perf_counter()
         logits = self.session.run(None, {self.input_name: x})[0][0]
@@ -54,8 +57,9 @@ class Model:
 class ModelManager:
     """Holds the current model; swaps it atomically on reload."""
 
-    def __init__(self, uri: str):
+    def __init__(self, uri: str, on_event=None):
         self.uri = uri
+        self.on_event = on_event or (lambda *a, **k: None)  # (kind, message, level) -> None
         self.model = None
         self.error = None
         self._lock = threading.Lock()
@@ -99,6 +103,7 @@ class ModelManager:
             self.error = str(e)
             M.RELOADS.labels("error").inc()
             log.warning("Model load failed: %s", e)
+            self.on_event("model", f"Model load failed: {str(e)[:200]}", "error")
             return False
         with self._lock:
             old, self.model, self.error = self.model, new, None
@@ -111,12 +116,16 @@ class ModelManager:
         M.REF_CONF.set(new.reference.get("confidence_mean") or 0)
         M.RELOADS.labels("ok").inc()
         log.info("Loaded model version %s (%d classes)", new.version, len(new.classes))
+        self.on_event("model", f"Now serving model v{new.version}"
+                      + (f" (was v{old.version})" if old and old.version != new.version else ""), "success")
         return True
 
     def current(self):
+        """The model serving right now (None until the first successful load)."""
         with self._lock:
             return self.model
 
     def poll_forever(self, interval: float, stop: threading.Event) -> None:
+        """Background thread: follow the registry alias (new champion or rollback)."""
         while not stop.wait(interval):
             self.load()

@@ -4,6 +4,12 @@ data:
   # condition, serve another, watch the PSI alert fire, then clear the filter
   # and retrain.
   include: {}
+prepare:
+  # Data quality checks on the raw frame list (scripts/prepare.py)
+  labels: [at_desk, empty, in_room, lights_off, lying_in_bed, sitting_on_bed]
+  lighting: [tube_on, tube_off]
+  invalid_combos: [[lights_off, tube_on]]
+  max_bad_share: 0.05    # fail the pipeline when more than 5% of the rows are bad
 split:
   seed: 42
   val: 0.15
@@ -41,6 +47,8 @@ preprocess:
   max_k: 80
   img_size: 224
   blur_faces: false
+  chunk_size: 200        # frames per Ray task
+  workers: 4             # DataLoader workers for the embedding step
   plot_sessions: 4
 export:
   opset: 17
@@ -53,3 +61,11 @@ register:
   alias: champion
   min_delta: 0.0
   force: false
+acceptance:
+  # Acceptance criteria checked by scripts/test_report.py (see docs/04-test-plan.md)
+  macro_f1_min: 0.60            # test macro-F1 of the ONNX model, over the classes present in the test split
+  latency_ms_p95_max: 100       # one prediction on 2 CPU threads (export benchmark)
+  api_latency_ms_p95_max: 500   # POST /predict on nova, network included (live check)
+  parity_max_abs_diff: 0.001    # ONNX vs PyTorch logits
+  data_bad_share_max: 0.05      # share of raw rows failing the data quality checks
+  ray_resize_fps_min: 100       # throughput of the Ray resize step

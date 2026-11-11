@@ -1,0 +1,13 @@
+# The single Python environment of the project (used by MLproject).
+# `mlflow run .` builds a virtualenv from this file, so training, the pipeline
+# and the tests all run against the same interpreter and the same packages on
+# any machine. The Legion's .venv is created from the same two requirements
+# files (see README), which keeps "dev" and "test" identical.
+python: "3.12"
+build_dependencies:
+  - pip
+  - setuptools
+  - wheel
+dependencies:
+  - -r requirements.txt
+  - -r requirements-dev.txt
