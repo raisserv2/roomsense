@@ -1,12 +1,12 @@
 {
   "tracking_uri": "https://nova.tailb5cb87.ts.net:5443",
-  "run_id": "609ea65aa14e451a93c4d840109f7e40",
+  "run_id": "e6e82769a84640d4aa553f7c7db5cca2",
   "model": "roomsense",
-  "version": "1",
+  "version": "2",
   "promoted": true,
-  "reason": "no champion yet",
-  "candidate_test_macro_f1": 0.6146286993857298,
-  "champion_version_before": null,
+  "reason": "class list changed",
+  "candidate_test_macro_f1": 0.5483579258853033,
+  "champion_version_before": "1",
   "champion_test_macro_f1": null,
   "serving_alias": "roomsense@champion"
 }

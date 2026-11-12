@@ -5,9 +5,9 @@ stages:
     deps:
     - path: data/raw
       hash: md5
-      md5: 037ba337d8c85696d725fcab537225fe.dir
-      size: 488405336
-      nfiles: 15186
+      md5: fca379cdcbfc1f6101c9eba6f03512cf.dir
+      size: 688726758
+      nfiles: 27356
     - path: scripts/prepare.py
       hash: md5
       md5: a143b92c4ad453bac61844ca50daef5d
@@ -15,15 +15,15 @@ stages:
     outs:
     - path: data/processed/manifest.csv
       hash: md5
-      md5: 135b1e06d3552e58a8aa374aff3402be
-      size: 1663795
+      md5: e903a9837ab9e33e741114956f5506ca
+      size: 3034743
   split:
     cmd: python3 scripts/split.py --seed 42 --val 0.15 --test 0.15
     deps:
     - path: data/processed/clean_manifest.csv
       hash: md5
-      md5: 98ee7292810ef3be159b02982a6bde79
-      size: 135492
+      md5: 40935bc5a4841035eb277de37ad1c5c6
+      size: 206332
     - path: scripts/split.py
       hash: md5
       md5: 8e71edb37c4cab5fd8fb1b5385181170
@@ -39,68 +39,93 @@ stages:
     outs:
     - path: data/processed/splits.csv
       hash: md5
-      md5: 689fa885ef23e21b0d133f49dabf67c3
-      size: 143504
+      md5: 551cfa19de130d48cca3fff8481890b7
+      size: 218512
     - path: reports/split_report.json
       hash: md5
-      md5: ccde8197fb399414735749af1ae4c961
-      size: 751
+      md5: 220e3527b9a1f0ef8ea12865ba3f3559
+      size: 829
   train:
     cmd: python scripts/train.py
     deps:
     - path: data/processed/images
       hash: md5
-      md5: 7ff4c355a742ffcf7f7d90eea324bc10.dir
-      size: 23781972
-      nfiles: 1222
+      md5: cd51d229778dc63e50d6634cbc8ddda7.dir
+      size: 33523387
+      nfiles: 1857
     - path: data/processed/splits.csv
       hash: md5
-      md5: 689fa885ef23e21b0d133f49dabf67c3
-      size: 143504
+      md5: 551cfa19de130d48cca3fff8481890b7
+      size: 218512
+    - path: roomsense/calibration.py
+      hash: md5
+      md5: 9d01186b5e0fbb92baeac611f465406b
+      size: 2263
     - path: scripts/train.py
       hash: md5
-      md5: 90086a2be62bcc832aed3bd4332b5d7b
-      size: 6233
+      md5: d1d61314c614346f074722ee8e394019
+      size: 11436
     params:
       params.yaml:
         train:
           seed: 42
-          epochs: 8
+          freeze_epochs: 3
+          head_lr: 0.001
+          epochs: 15
+          lr: 0.0003
+          patience: 4
+          weight_decay: 0.0001
           batch_size: 64
-          lr: 0.001
           img_h: 224
           img_w: 224
           workers: 8
+          balance: sampler
+          session_balance: 0.5
+          label_smoothing: 0.1
+          augment:
+            brightness: 0.3
+            contrast: 0.3
+            saturation: 0.2
+            hue: 0.02
+          calibrate: true
           log_torch_model: true
     outs:
     - path: models/best.pt
       hash: md5
-      md5: 05d0a72d1537c6b473384bc000d64c62
-      size: 6214953
+      md5: 85fe632c8ef8245cc3b47542a3ecff04
+      size: 6219049
+    - path: models/calibration.json
+      hash: md5
+      md5: ca39f046b5982ac815ed85dd7a553e2d
+      size: 39
     - path: models/classes.json
       hash: md5
-      md5: 6ffe9a0668ee4ea9cd5960b26ffaf9e5
-      size: 65
+      md5: b4de354b6a8aa2bdd24f3004ddb7bb6a
+      size: 79
     - path: models/train_run.json
       hash: md5
-      md5: 7cdf3e6251016debfaad39291635986b
+      md5: 0f3656155278fd3241ba41a0d21ca533
       size: 131
+    - path: reports/confusion_matrix.png
+      hash: md5
+      md5: 4b898060ad26be2ca176f8d86baaf021
+      size: 41430
     - path: reports/metrics.json
       hash: md5
-      md5: 801e7805d462c43b8d0c017203ec4419
-      size: 638
+      md5: e3a7b89e68146b2b091d4561d86f9e54
+      size: 1048
   preprocess:
     cmd: python scripts/preprocess.py
     deps:
     - path: data/processed/manifest.csv
       hash: md5
-      md5: 135b1e06d3552e58a8aa374aff3402be
-      size: 1663795
+      md5: e903a9837ab9e33e741114956f5506ca
+      size: 3034743
     - path: data/raw
       hash: md5
-      md5: 037ba337d8c85696d725fcab537225fe.dir
-      size: 488405336
-      nfiles: 15186
+      md5: fca379cdcbfc1f6101c9eba6f03512cf.dir
+      size: 688726758
+      nfiles: 27356
     - path: scripts/preprocess.py
       hash: md5
       md5: 6947de41181d6e4198feb6982571b611
@@ -112,49 +137,53 @@ stages:
           trim_n: 3
           keep_ratio: 0.1
           min_k: 5
-          max_k: 60
+          max_k: 80
           img_size: 224
           blur_faces: false
           plot_sessions: 4
     outs:
     - path: data/processed/clean_manifest.csv
       hash: md5
-      md5: 98ee7292810ef3be159b02982a6bde79
-      size: 135492
+      md5: 40935bc5a4841035eb277de37ad1c5c6
+      size: 206332
     - path: data/processed/images
       hash: md5
-      md5: 7ff4c355a742ffcf7f7d90eea324bc10.dir
-      size: 23781972
-      nfiles: 1222
+      md5: cd51d229778dc63e50d6634cbc8ddda7.dir
+      size: 33523387
+      nfiles: 1857
     - path: reports/clusters
       hash: md5
-      md5: 26e7254f5ab916a144b280aa1fd3295f.dir
-      size: 175013
+      md5: 56dd5ebc9730fafd7890371ee2b5659a.dir
+      size: 172663
       nfiles: 4
     - path: reports/preprocess_report.json
       hash: md5
-      md5: 587b8d35dab89f277b85bac1d78d7011
-      size: 244
+      md5: ed3545a54cf44de47fd85a9dcca94abb
+      size: 267
   export:
     cmd: python scripts/export.py
     deps:
     - path: data/processed/images
       hash: md5
-      md5: 7ff4c355a742ffcf7f7d90eea324bc10.dir
-      size: 23781972
-      nfiles: 1222
+      md5: cd51d229778dc63e50d6634cbc8ddda7.dir
+      size: 33523387
+      nfiles: 1857
     - path: data/processed/splits.csv
       hash: md5
-      md5: 689fa885ef23e21b0d133f49dabf67c3
-      size: 143504
+      md5: 551cfa19de130d48cca3fff8481890b7
+      size: 218512
     - path: models/best.pt
       hash: md5
-      md5: 05d0a72d1537c6b473384bc000d64c62
-      size: 6214953
+      md5: 85fe632c8ef8245cc3b47542a3ecff04
+      size: 6219049
+    - path: models/calibration.json
+      hash: md5
+      md5: ca39f046b5982ac815ed85dd7a553e2d
+      size: 39
     - path: models/classes.json
       hash: md5
-      md5: 6ffe9a0668ee4ea9cd5960b26ffaf9e5
-      size: 65
+      md5: b4de354b6a8aa2bdd24f3004ddb7bb6a
+      size: 79
     - path: roomsense/drift.py
       hash: md5
       md5: 8cbc98cc99fa9bb5d0b75dcbeb9b5240
@@ -169,8 +198,8 @@ stages:
       size: 1778
     - path: scripts/export.py
       hash: md5
-      md5: 31d41eaa6b45d2f5118daa2192ab5248
-      size: 5526
+      md5: 52d50adad8c8aa3130b7e53e9e3825e8
+      size: 6227
     params:
       params.yaml:
         export:
@@ -182,27 +211,27 @@ stages:
     outs:
     - path: models/model.onnx
       hash: md5
-      md5: ece496521d7c9f8b52fc7ec382e82841
-      size: 6101547
+      md5: b2b5a778c5a99b747a4d53573ef1871e
+      size: 6107600
     - path: models/model_meta.json
       hash: md5
-      md5: 5632067775da6b598ced911b2be0d883
-      size: 1468
+      md5: 5f2517675161d8b01c8698aab6ce9b75
+      size: 1525
     - path: reports/export_report.json
       hash: md5
-      md5: 419bb650622ad0b39b95f8bc5f3ea687
-      size: 489
+      md5: ffb5b8f1dda631efeae14e3d6f28b394
+      size: 527
   register:
     cmd: python scripts/register.py
     deps:
     - path: models/model.onnx
       hash: md5
-      md5: ece496521d7c9f8b52fc7ec382e82841
-      size: 6101547
+      md5: b2b5a778c5a99b747a4d53573ef1871e
+      size: 6107600
     - path: models/model_meta.json
       hash: md5
-      md5: 5632067775da6b598ced911b2be0d883
-      size: 1468
+      md5: 5f2517675161d8b01c8698aab6ce9b75
+      size: 1525
     - path: scripts/register.py
       hash: md5
       md5: 866e04d97a61058abe5a6c3bc6c4b346
@@ -217,5 +246,5 @@ stages:
     outs:
     - path: reports/register_report.json
       hash: md5
-      md5: 62ac1ea92f7b1443fb64c18d4762ebd1
-      size: 359
+      md5: 90fbe48c9da59b0eee66ea805071ee98
+      size: 361
