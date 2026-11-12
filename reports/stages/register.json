@@ -1,0 +1,13 @@
+{
+  "stage": "register",
+  "status": "ok",
+  "started_at": "2026-11-12T08:33:54+00:00",
+  "git_commit": "bd4003655aed54d9f0e4105d0994ca7864016fc4",
+  "finished_at": "2026-11-12T08:34:04+00:00",
+  "duration_s": 10.216,
+  "items": 338,
+  "unit": "frames",
+  "throughput_per_s": 33.085,
+  "version": "4",
+  "promoted": false
+}

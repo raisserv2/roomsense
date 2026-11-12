@@ -1,0 +1,228 @@
+{
+  "returncode": 0,
+  "stages": {
+    "prepare": {
+      "status": "cached",
+      "seconds": 0.714,
+      "items": 56719,
+      "unit": "frames",
+      "throughput_per_s": 79438.375,
+      "finished_at": "2026-11-12T08:23:55+00:00"
+    },
+    "preprocess": {
+      "status": "cached",
+      "seconds": 48.34,
+      "items": 56719,
+      "unit": "frames",
+      "throughput_per_s": 1173.335,
+      "finished_at": "2026-11-12T08:24:53+00:00"
+    },
+    "split": {
+      "status": "cached",
+      "seconds": 7.682,
+      "items": 2412,
+      "unit": "frames",
+      "throughput_per_s": 313.981,
+      "finished_at": "2026-11-12T08:25:06+00:00"
+    },
+    "train": {
+      "status": "cached",
+      "seconds": 22.567,
+      "items": 11837,
+      "unit": "images",
+      "throughput_per_s": 524.527,
+      "finished_at": "2026-11-12T08:25:32+00:00"
+    },
+    "export": {
+      "status": "cached",
+      "seconds": 2.971,
+      "items": 2412,
+      "unit": "frames",
+      "throughput_per_s": 811.848,
+      "finished_at": "2026-11-12T08:25:39+00:00"
+    },
+    "register": {
+      "status": "ok",
+      "wall_seconds": 11.455,
+      "seconds": 10.216,
+      "items": 338,
+      "unit": "frames",
+      "throughput_per_s": 33.085,
+      "finished_at": "2026-11-12T08:34:04+00:00"
+    }
+  },
+  "seconds": 14.926,
+  "failed_stage": null,
+  "git_commit": "bd4003655aed54d9f0e4105d0994ca7864016fc4",
+  "git_dirty": true,
+  "data_version": "25c5b5c6095e6cb439592f8f762ba159.dir",
+  "trigger": "manual",
+  "reason": "fair promotion gate",
+  "host": "legion",
+  "started_at": "2026-11-12T08:33:49+00:00",
+  "finished_at": "2026-11-12T08:34:04+00:00",
+  "status": "ok",
+  "dag": {
+    "stages": [
+      {
+        "name": "prepare",
+        "cmd": "python3 scripts/prepare.py",
+        "deps": [
+          "scripts/prepare.py",
+          "data/raw"
+        ],
+        "outs": [
+          "data/processed/manifest.csv",
+          "reports/prepare_report.json"
+        ],
+        "params": [
+          "prepare"
+        ]
+      },
+      {
+        "name": "preprocess",
+        "cmd": "python scripts/preprocess.py",
+        "deps": [
+          "scripts/preprocess.py",
+          "data/processed/manifest.csv",
+          "data/raw"
+        ],
+        "outs": [
+          "data/processed/clean_manifest.csv",
+          "data/processed/images",
+          "reports/clusters",
+          "reports/preprocess_report.json"
+        ],
+        "params": [
+          "preprocess"
+        ]
+      },
+      {
+        "name": "split",
+        "cmd": "python3 scripts/split.py --seed ${split.seed} --val ${split.val} --test ${split.test}",
+        "deps": [
+          "scripts/split.py",
+          "data/processed/clean_manifest.csv"
+        ],
+        "outs": [
+          "data/processed/splits.csv",
+          "reports/split_report.json"
+        ],
+        "params": [
+          "split",
+          "data"
+        ]
+      },
+      {
+        "name": "train",
+        "cmd": "python scripts/train.py",
+        "deps": [
+          "scripts/train.py",
+          "roomsense/calibration.py",
+          "roomsense/evalmetrics.py",
+          "data/processed/splits.csv",
+          "data/processed/images"
+        ],
+        "outs": [
+          "models/best.pt",
+          "models/classes.json",
+          "models/calibration.json",
+          "models/train_run.json",
+          "reports/metrics.json",
+          "reports/confusion_matrix.png"
+        ],
+        "params": [
+          "train"
+        ]
+      },
+      {
+        "name": "export",
+        "cmd": "python scripts/export.py",
+        "deps": [
+          "scripts/export.py",
+          "roomsense/frames.py",
+          "roomsense/drift.py",
+          "roomsense/onnx_eval.py",
+          "roomsense/evalmetrics.py",
+          "models/best.pt",
+          "models/classes.json",
+          "models/calibration.json",
+          "data/processed/splits.csv",
+          "data/processed/images"
+        ],
+        "outs": [
+          "models/model.onnx",
+          "models/model_meta.json",
+          "reports/export_report.json"
+        ],
+        "params": [
+          "export"
+        ]
+      },
+      {
+        "name": "register",
+        "cmd": "python scripts/register.py",
+        "deps": [
+          "scripts/register.py",
+          "roomsense/registry.py",
+          "models/model.onnx",
+          "models/model_meta.json"
+        ],
+        "outs": [
+          "reports/register_report.json"
+        ],
+        "params": [
+          "register"
+        ]
+      }
+    ],
+    "edges": [
+      [
+        "prepare",
+        "preprocess"
+      ],
+      [
+        "preprocess",
+        "split"
+      ],
+      [
+        "preprocess",
+        "train"
+      ],
+      [
+        "preprocess",
+        "export"
+      ],
+      [
+        "split",
+        "train"
+      ],
+      [
+        "split",
+        "export"
+      ],
+      [
+        "train",
+        "export"
+      ],
+      [
+        "export",
+        "register"
+      ]
+    ]
+  },
+  "headline": {
+    "frames_raw": 56719,
+    "frames_valid": 56719,
+    "frames_kept": 2412,
+    "sessions": 107,
+    "ray_resize_fps": 5759.9,
+    "preprocess_fps": 1301.4,
+    "train_images_per_s": 1103.6,
+    "test_macro_f1": 0.65184522790455,
+    "latency_ms_p95": 2.8499490499143576,
+    "model_version": "4",
+    "promoted": false
+  },
+  "mlflow_run_id": "5ce1b80536ae414baabe453a294fac26"
+}

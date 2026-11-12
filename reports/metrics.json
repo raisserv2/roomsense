@@ -1,69 +1,80 @@
 {
-  "best_val_macro_f1": 0.5236749680715197,
-  "best_epoch": 11,
-  "test_macro_f1": 0.5493024322645923,
-  "test_accuracy": 0.7536231884057971,
+  "best_val_macro_f1": 0.6533474949216285,
+  "best_epoch": 2,
+  "test_macro_f1": 0.6489868301870614,
+  "test_accuracy": 0.606508875739645,
   "test_per_class_f1": {
-    "at_desk": 0.8745762711864407,
-    "empty": 0.6324786324786325,
-    "in_room": 0.4166666666666667,
-    "lights_off": 0.0,
-    "lying_in_bed": 0.37209302325581395,
-    "sitting_on_bed": 1.0
+    "at_desk": 0.611353711790393,
+    "empty": 0.6050420168067226,
+    "in_room": 0.7272727272727273,
+    "lights_off": 0.8888888888888888,
+    "lying_in_bed": 0.43636363636363634,
+    "sitting_on_bed": 0.625
   },
-  "temperature": 0.7769789987314936,
-  "test_ece_before_calibration": 0.20870113251679054,
-  "test_ece_after_calibration": 0.14979994344893272,
-  "test_mean_confidence_before": 0.6225627348323683,
-  "test_mean_confidence_after": 0.7055581334188632,
+  "test_support": {
+    "at_desk": 148,
+    "empty": 90,
+    "in_room": 15,
+    "lights_off": 5,
+    "lying_in_bed": 38,
+    "sitting_on_bed": 42
+  },
+  "test_classes_absent": [],
+  "train_seconds": 10.73,
+  "train_images_per_s": 1103.6,
+  "temperature": 0.9592659491373328,
+  "test_ece_before_calibration": 0.09259531184804566,
+  "test_ece_after_calibration": 0.10714774481677311,
+  "test_mean_confidence_before": 0.5706728850441495,
+  "test_mean_confidence_after": 0.5828042805984002,
   "confusion_matrix": [
     [
-      129,
+      70,
+      62,
       0,
       0,
-      0,
-      0,
-      0
+      4,
+      12
     ],
     [
-      26,
-      37,
-      1,
+      5,
+      72,
       0,
       0,
-      0
+      0,
+      13
     ],
     [
-      11,
       2,
-      10,
+      1,
+      12,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
       1,
       0,
-      0
-    ],
-    [
-      0,
-      0,
-      0,
-      0,
+      4,
       0,
       0
     ],
     [
-      0,
-      14,
-      13,
-      0,
+      4,
       8,
-      0
+      4,
+      0,
+      12,
+      10
     ],
     [
       0,
+      4,
+      2,
       0,
-      0,
-      0,
-      0,
-      24
+      1,
+      35
     ]
   ]
 }

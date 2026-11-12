@@ -1,12 +1,29 @@
 {
   "tracking_uri": "https://nova.tailb5cb87.ts.net:5443",
-  "run_id": "e6e82769a84640d4aa553f7c7db5cca2",
+  "run_id": "258d36e04fa5441486fd82a71c7f0cf2",
   "model": "roomsense",
-  "version": "2",
-  "promoted": true,
-  "reason": "class list changed",
-  "candidate_test_macro_f1": 0.5483579258853033,
-  "champion_version_before": "1",
-  "champion_test_macro_f1": null,
+  "version": "4",
+  "promoted": false,
+  "reason": "candidate 0.4875 vs champion v2 0.5194 on 129 test frames unseen by both",
+  "candidate_test_macro_f1": 0.65184522790455,
+  "champion_version_before": "2",
+  "champion_compare_macro_f1": 0.519434024323824,
+  "comparison": {
+    "test_frames": 338,
+    "test_sessions": 22,
+    "compare_frames": 129,
+    "compare_sessions": 8,
+    "excluded_frames": 209,
+    "compare_per_class": {
+      "at_desk": 105,
+      "empty": 5,
+      "in_room": 5,
+      "lights_off": 5,
+      "lying_in_bed": 5,
+      "sitting_on_bed": 4
+    },
+    "candidate_macro_f1": 0.48748321882650236,
+    "champion_macro_f1": 0.519434024323824
+  },
   "serving_alias": "roomsense@champion"
 }

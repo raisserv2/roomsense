@@ -1,0 +1,12 @@
+{
+  "stage": "export",
+  "status": "ok",
+  "started_at": "2026-11-12T08:25:36+00:00",
+  "git_commit": "34ace32b53e3b2ddeba097c360394fbf0e4656da",
+  "finished_at": "2026-11-12T08:25:39+00:00",
+  "duration_s": 2.971,
+  "items": 2412,
+  "unit": "frames",
+  "throughput_per_s": 811.848,
+  "latency_ms_p95": 2.8499490499143576
+}

@@ -1,2 +1,5 @@
 /best.pt
 /classes.json
+/calibration.json
+/model.onnx
+/model_meta.json

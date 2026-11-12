@@ -1,48 +1,47 @@
 {
   "seed": 42,
   "include": {},
-  "frames_before_filter": 1857,
+  "frames_before_filter": 2412,
   "sessions": {
-    "val": 21,
-    "test": 18,
-    "train": 43
+    "test": 22,
+    "train": 65,
+    "val": 20
   },
   "frames": {
-    "train": 1306,
-    "val": 275,
-    "test": 276
+    "train": 1691,
+    "val": 383,
+    "test": 338
   },
   "frame_share": {
-    "train": 0.703,
-    "val": 0.148,
-    "test": 0.149
+    "train": 0.701,
+    "val": 0.159,
+    "test": 0.14
   },
   "per_class": {
     "train": {
-      "at_desk": 590,
-      "empty": 305,
-      "lying_in_bed": 165,
-      "sitting_on_bed": 103,
-      "in_room": 109,
+      "at_desk": 675,
+      "in_room": 102,
+      "lying_in_bed": 233,
+      "sitting_on_bed": 227,
+      "empty": 420,
       "lights_off": 34
     },
     "val": {
-      "lying_in_bed": 36,
-      "in_room": 23,
-      "at_desk": 127,
-      "empty": 65,
-      "sitting_on_bed": 24
+      "empty": 88,
+      "at_desk": 141,
+      "lying_in_bed": 50,
+      "in_room": 39,
+      "sitting_on_bed": 60,
+      "lights_off": 5
     },
     "test": {
-      "at_desk": 129,
-      "in_room": 24,
-      "empty": 64,
-      "sitting_on_bed": 24,
-      "lying_in_bed": 35
+      "lying_in_bed": 38,
+      "in_room": 15,
+      "at_desk": 148,
+      "empty": 90,
+      "sitting_on_bed": 42,
+      "lights_off": 5
     }
   },
-  "classes_missing_from_val_or_test": [
-    "val:lights_off",
-    "test:lights_off"
-  ]
+  "classes_missing_from_val_or_test": []
 }

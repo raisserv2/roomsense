@@ -1,15 +1,33 @@
 {
-  "frames_in": 27354,
-  "after_trim": 26892,
-  "kept": 1857,
-  "sessions": 82,
+  "frames_in": 56719,
+  "after_trim": 56131,
+  "unreadable": 0,
+  "kept": 2412,
+  "sessions": 107,
   "faces_blurred_total": 0,
   "kept_per_class": {
-    "at_desk": 846,
-    "empty": 434,
-    "lying_in_bed": 236,
+    "at_desk": 964,
+    "empty": 598,
+    "sitting_on_bed": 329,
+    "lying_in_bed": 321,
     "in_room": 156,
-    "sitting_on_bed": 151,
-    "lights_off": 34
+    "lights_off": 44
+  },
+  "ray_cpus": 24,
+  "chunk_size": 200,
+  "embed_device": "cuda",
+  "seconds": {
+    "trim": 0.012,
+    "ray_resize": 9.745,
+    "embed": 20.835,
+    "ray_kmeans": 10.629,
+    "write": 0.343,
+    "plots": 2.019
+  },
+  "throughput_fps": {
+    "ray_resize": 5759.9,
+    "embed": 2694.1,
+    "ray_kmeans": 5280.7,
+    "end_to_end": 1301.4
   }
 }
