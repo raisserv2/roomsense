@@ -60,6 +60,7 @@ register:
   model_name: roomsense
   alias: champion
   min_delta: 0.0
+  min_compare_frames: 50   # fewest test frames unseen by the champion needed to compare
   force: false
 acceptance:
   # Acceptance criteria checked by scripts/test_report.py (see docs/04-test-plan.md)

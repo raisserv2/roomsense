@@ -38,7 +38,7 @@ PDF copies are in [`pdf/`](pdf/). Diagrams (SVG, PNG, PDF) and the script that d
 | Logging | `roomsense/runlog.py` (pipeline), `logging` in the API and capture · LLD section 9 |
 | Exception handling | LLD section 9 · API error tests in `tests/test_api.py` |
 | Inline documentation | Module and function docstrings throughout |
-| Unit tests | `tests/` (86 cases) |
+| Unit tests | `tests/` (91 cases) |
 | Test plan, test cases, test report, acceptance criteria | [04-test-plan.md](04-test-plan.md), [05-test-report.md](05-test-report.md), `params.yaml: acceptance` |
 
 ### AIOps

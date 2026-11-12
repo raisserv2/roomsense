@@ -159,7 +159,7 @@ Base: `http://roomsense-capture:8100` (tailnet: `https://nova.tailb5cb87.ts.net:
 | `evalmetrics` | `per_class_f1(y_true, y_pred, n)`, `macro_f1_present(y_true, y_pred, classes) -> {macro_f1, accuracy, per_class_f1, support, classes_evaluated, classes_absent, n}` | Averages over classes present in the ground truth. |
 | `model_pkg` | `load_package(path) -> (onnx_path, meta)` | A model package is `model.onnx` + `model_meta.json`. |
 | `onnx_eval` | `session(path, threads)`, `macro_f1(sess, df, classes)` | Evaluates an ONNX model on a split. |
-| `registry` | `list_versions(client, name)`, `champion_version(…)`, `promote(client, name, version)`, `rollback_target(…)`, `rollback(client, name, alias, to_version, reason)` (raises `ValueError`) | Takes any object with MlflowClient's methods, so it is tested with a fake. |
+| `registry` | `list_versions(client, name)`, `champion_version(…)`, `promote(client, name, version)`, `rollback_target(…)`, `rollback(client, name, alias, to_version, reason)` (raises `ValueError`), `seen_sessions(splits)`, `fair_comparison_set(test, champion_seen)` | Takes any object with MlflowClient's methods, so it is tested with a fake. |
 | `runlog` | `setup_logging(name)`, `start_stage(name) -> StageRun`, `StageRun.done(items, unit, **extra)`, `.fail(error)`, `read_stage(name)`, `git_commit()`, `data_version()`, `provenance()` | Uniform logging and `reports/stages/<stage>.json`. |
 
 ### 5.2 `deploy/api/app/`
@@ -185,7 +185,8 @@ Base: `http://roomsense-capture:8100` (tailnet: `https://nova.tailb5cb87.ts.net:
 | `split.py` | Stage 3 | `clean_manifest.csv` → `splits.csv`, `reports/split_report.json` |
 | `train.py` | Stage 4 | splits + images → `models/best.pt`, `calibration.json`, `train_run.json`, `reports/metrics.json`, confusion matrix; an MLflow run |
 | `export.py` | Stage 5 | `best.pt` → `models/model.onnx`, `model_meta.json`, `reports/export_report.json` |
-| `register.py` | Stage 6 | ONNX package → a registry version, `reports/register_report.json` |
+| `register.py` | Stage 6: promotion gate on test sessions unseen by the champion (`registry.fair_comparison_set`); stores `splits.csv` in the run | ONNX package → a registry version, `reports/register_report.json` (decision, both scores, the comparison set) |
+| `backfill_splits.py` | Stores an older model's `splits.csv` in its MLflow run, recovered from the DVC cache via a commit's `dvc.lock` | `--version 2 --lock-rev <commit>` |
 | `run_pipeline.py` | Runs `dvc repro`, records the run | → MLflow experiment `roomsense-pipeline`, `reports/pipeline_run.json` |
 | `retrain.py` | Flag → git pull → dvc pull → pipeline → dvc push → commit → ack | |
 | `rollback.py` | `--list`, `--to N` | Moves the champion alias |

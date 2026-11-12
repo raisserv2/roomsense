@@ -83,7 +83,7 @@ The repository has four parts with one-way dependencies:
 
 **Deploy by alias.** Serving loads `models:/roomsense@champion`. Deploying = moving the alias; rolling back = moving it back. The API polls the alias every 60 s and swaps the model in memory under a lock, so there is no restart and no dropped request.
 
-**Promotion gate.** `register.py` promotes a candidate only if its test macro-F1 is at least the champion's, with both evaluated on the candidate's test split. Comparing stored numbers from different splits would be meaningless.
+**Promotion gate.** `register.py` promotes a candidate only if its macro-F1 is at least the champion's, with both evaluated on the same frames: the candidate's test sessions that the champion never trained or validated on. Comparing stored numbers from different splits would be meaningless, and so would scoring both on the candidate's whole test split: the splitter reassigns sessions when the dataset grows, so part of it can be the champion's old training data. The first real run on the doubled dataset showed exactly that: 62% of the test frames were sessions the champion had trained on, which put it at 0.73 against the candidate's 0.65. Each registered model therefore stores its `splits.csv` in its MLflow run, and the gate refuses to decide (no promotion) when fewer than 50 test frames are unseen by the champion.
 
 **Rollback.** The replaced version is written into the new champion's tags. `scripts/rollback.py`, `POST /pipeline/rollback` and a button on the Pipeline page move the alias back; the API reloads immediately.
 
@@ -111,6 +111,7 @@ The repository has four parts with one-way dependencies:
 | Polling for model changes | Up to 60 s before a new champion serves | `/reload` and the retrain acknowledgement trigger it immediately |
 | Retrain waits for the Legion | Not instant | The old model keeps serving; the alert tells the owner |
 | Brightness-only drift alert | Blind to other shifts (furniture moved) | Live-accuracy and low-confidence alerts cover part of that |
+| The split is recomputed when the data grows | Old test sessions can move into training, so the fair comparison set shrinks | The gate excludes them; a "sticky" split that keeps earlier assignments is the full fix |
 | One camera angle | The model is useless elsewhere | Stated non-goal |
 
 ## 6. Security and privacy

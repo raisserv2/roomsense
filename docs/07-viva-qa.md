@@ -46,9 +46,11 @@ Note: section 9 covers the standard MLOps (Machine Learning Operations) tool top
 
 **Why macro-F1 and not accuracy?** Accuracy rewards getting the big class right. Macro-F1 averages per-class F1 so every class counts equally.
 
-**Your macro-F1 ignores absent classes. Isn't that cheating?** If a class has zero test frames, its F1 is undefined; counting it as 0 measures my split, not my model. I average over classes that are present and I report which were absent, and my acceptance criteria require that none are absent in the final run. Champion and candidate are always scored the same way on the same split.
+**Your macro-F1 ignores absent classes. Isn't that cheating?** If a class has zero test frames, its F1 is undefined; counting it as 0 measures my split, not my model. I average over classes that are present and I report which were absent, and my acceptance criteria require that none are absent in the final run. Champion and candidate are always scored the same way on the same frames.
 
-**How do you decide a new model is better?** `register.py` downloads the champion and evaluates both on the candidate's test split. Promote only if candidate ≥ champion. Comparing stored numbers from different splits would be meaningless.
+**How do you decide a new model is better?** `register.py` downloads the champion and evaluates both models on the candidate's test sessions that the champion never trained on. Promote only if candidate ≥ champion there. Comparing stored numbers from different splits would be meaningless.
+
+**Why "sessions the champion never trained on"?** I found this the hard way. My splitter reassigns sessions when the dataset grows. When the data doubled, 62% of the new test frames were sessions v2 had trained on, so v2 scored 0.73 against the new model's 0.65: a memory test, not a fair one. Now every registered model stores its split in MLflow, the gate compares only on sessions unseen by both, and it refuses to decide on fewer than 50 such frames. The full fix would be a sticky split that never moves old sessions.
 
 **What is your weakest class and why?** Sitting on the bed versus lying in bed: same place, similar pose from above. And `lights_off` had very few sessions. The fix is more varied sessions, which is a data problem, not a model problem.
 
@@ -94,7 +96,7 @@ Note: section 9 covers the standard MLOps (Machine Learning Operations) tool top
 
 ## 8. Engineering
 
-**How did you test?** 86 automated tests: unit tests of the library, API tests with a tiny generated ONNX model and a fake MLflow, configuration tests. Plus pipeline integration runs, live checks and manual UI cases. Acceptance criteria are in `params.yaml` and checked by a script that writes the test report.
+**How did you test?** 91 automated tests: unit tests of the library, API tests with a tiny generated ONNX model and a fake MLflow, configuration tests. Plus pipeline integration runs, live checks and manual UI cases. Acceptance criteria are in `params.yaml` and checked by a script that writes the test report.
 
 **How do you handle errors?** Bad input gets a 4xx with a readable message; missing dependencies a 503; anything unexpected is logged with an id and returns a clean 500. Background loops catch, count and continue. MLflow calls time out fast so a dead tracker can't hang the API.
 

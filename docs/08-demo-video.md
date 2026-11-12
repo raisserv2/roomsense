@@ -21,7 +21,7 @@ Silent documentary style: no talking to camera, on-screen captions only. Target 
 | 6 | 25 s | Legion terminal: `dvc dag`, then `python scripts/run_pipeline.py` (speed up), stage lines scrolling, final "pipeline finished" | 3 · Pipeline: DVC DAG, six stages, only changed stages rerun |
 | 7 | 10 s | `cat reports/preprocess_report.json` with `throughput_fps` highlighted; one cluster plot | Ray preprocessing: N frames/s · near-duplicates removed per session |
 | 8 | 25 s | MLflow: runs list → one run → params, metric curves, confusion matrix, Tags (`git_commit`, `data_version`) | 4 · Track: every run reproducible from a Git commit + a run ID |
-| 9 | 10 s | MLflow → Models → `roomsense`: versions, `champion` alias | 5 · Register: promoted only if better on the same test split |
+| 9 | 10 s | MLflow → Models → `roomsense`: versions, `champion` alias | 5 · Register: promoted only if better on sessions neither model trained on |
 | 10 | 30 s | Web UI Live page on the laptop. Walk from desk to bed in a picture-in-picture room shot; the label follows. | 6 · Serve: FastAPI + ONNX Runtime on a CPU, a few ms per frame |
 | 11 | 10 s | Same page on the phone | Works on a phone |
 | 12 | 15 s | "Try your own photo": upload a photo; then drop a PDF to show the friendly error | Any photo · clear messages when something is wrong |
@@ -35,7 +35,7 @@ Silent documentary style: no talking to camera, on-screen captions only. Target 
 | 20 | 25 s | Legion: `python scripts/retrain.py` (speed up): git pull, dvc pull, stages, "retrain done" | 10 · Retrain: the Legion picks up the flag and reruns the pipeline |
 | 21 | 20 s | Live page: pill changes to the new version; drift share falls; Telegram "resolved". Pipeline page: new ✓ row, new version "in use". | 11 · Recover: new champion hot-reloaded, drift clears |
 | 22 | 15 s | Pipeline page: **Go back to the previous model** → confirm → version changes; then switch forward again | Rollback in one click |
-| 23 | 10 s | Terminal: `python scripts/test_report.py` ending in "86 passed"; the acceptance table in the report | 86 tests · acceptance criteria met |
+| 23 | 10 s | Terminal: `python scripts/test_report.py` ending in "91 passed"; the acceptance table in the report | 86 tests · acceptance criteria met |
 | 24 | 8 s | Architecture diagram again, then title card | RoomSense · AIOps course project · Khaja Mohammed |
 
 ## Drift scene, exact commands
