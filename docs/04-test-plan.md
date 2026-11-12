@@ -41,7 +41,7 @@ python scripts/test_report.py --api https://nova.tailb5cb87.ts.net:4443/api   # 
 
 ## 4. Test cases
 
-### 4.1 Automated: unit, API and configuration (86 cases)
+### 4.1 Automated: unit, API and configuration (91 cases)
 
 Every case is listed individually with its result in the test report, section 4. Summary by file:
 
@@ -56,6 +56,7 @@ Every case is listed individually with its result in the test report, section 4.
 | TC-PRE | `test_prepare.py` | 4 | Good rows pass; each of seven kinds of bad row is dropped and counted; too many bad rows fail the stage; missing manifest or columns |
 | TC-LOG | `test_runlog.py` | 5 | Stage record has status, duration and throughput; failures keep the error; data version is read from the DVC pointer |
 | TC-RUN | `test_run_pipeline.py` | 4 | DAG parsed from `dvc.yaml` has the six stages and right edges; a successful, a failing and a "dvc missing" run are classified correctly |
+| TC-FAIR | `test_fair_compare.py` | 5 | The champion's train/val sessions are excluded from the comparison; nothing is excluded when it saw none; the backfill finds a split through `dvc.lock` and the DVC cache |
 | TC-REG | `test_registry.py` | 9 | Promotion remembers the replaced version; rollback restores it; explicit target; refusals (already champion, unknown version, nothing older, no champion) |
 | TC-API | `test_api.py` | 16 | `/health`, `/model`, `/predict` (success and 400/422), monitored prediction updates metrics, 404 before any frame, dark frames flip `drifting` to true, the alert webhook raises and the ack clears the retrain flag, non-JSON bodies → 400, idempotent retrain request, clean 404, OpenAPI lists all 17 endpoints |
 | TC-PIP | `test_pipeline_api.py` | 9 | `/pipeline` with and without MLflow, failed and successful runs in `/pipeline/runs`, registry and rollback target, rollback moves the alias and is logged, token protection (403), pipeline metrics reach `/metrics`, activity log |

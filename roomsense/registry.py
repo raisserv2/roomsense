@@ -98,3 +98,32 @@ def rollback(client, name: str, alias: str = "champion", to_version=None, reason
     client.set_model_version_tag(name, target, "restored_at", now)
     client.set_registered_model_alias(name, alias, target)
     return {"champion": target, "rolled_back_from": current, "reason": reason}
+
+
+def seen_sessions(splits) -> set:
+    """Sessions a model learned from: its train and validation splits.
+
+    `splits` is the model's own splits.csv as a DataFrame (columns session_id, split).
+    """
+    return set(splits.loc[splits["split"].isin(["train", "val"]), "session_id"])
+
+
+def fair_comparison_set(test, champion_seen: set) -> tuple:
+    """Test rows the champion never learned from, plus a summary of what is left.
+
+    The splitter reassigns sessions whenever the dataset grows, so sessions the
+    champion trained on can land in the candidate's test split. Scoring the
+    champion on those would test it on pictures it has already studied. The
+    candidate never saw its own test sessions, so rows whose session the champion
+    did not see are unseen by both models: the only fair ground for a comparison.
+    """
+    keep = ~test["session_id"].isin(champion_seen)
+    rows = test[keep]
+    return rows, {
+        "test_frames": int(len(test)),
+        "test_sessions": int(test["session_id"].nunique()),
+        "compare_frames": int(len(rows)),
+        "compare_sessions": int(rows["session_id"].nunique()),
+        "excluded_frames": int((~keep).sum()),
+        "compare_per_class": {k: int(v) for k, v in rows["label"].value_counts().sort_index().items()},
+    }
