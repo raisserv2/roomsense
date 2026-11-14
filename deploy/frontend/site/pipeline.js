@@ -165,7 +165,7 @@ function renderRegistry() {
   if (!v.length) { box.innerHTML = `<p class="msg">No model has been registered yet.</p>`; return; }
   box.innerHTML = `<table><thead><tr><th>Version</th><th>Test macro-F1</th><th>Decision</th><th>Registered</th><th></th></tr></thead><tbody>${v.map((m) => `
     <tr>
-      <td><b>v${esc(m.version)}</b> ${m.is_champion ? '<span class="tag ok">in use</span>' : ""}${m.rolled_back_at ? '<span class="tag bad">rolled back</span>' : ""}</td>
+      <td><b>v${esc(m.version)}</b> ${m.is_champion ? '<span class="tag ok">in use</span>' : ""}${m.rolled_back_at && !m.is_champion ? '<span class="tag bad">rolled back</span>' : ""}</td>
       <td>${num(m.test_macro_f1, 3)}</td>
       <td>${esc(m.decision || "–")}</td>
       <td title="${esc(when(m.created_at))}">${esc(ago(m.created_at))}</td>
