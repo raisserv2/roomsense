@@ -29,6 +29,7 @@ services:
       --backend-store-uri sqlite:////mlflow/mlflow.db
       --artifacts-destination /mlflow/artifacts --serve-artifacts
       --allowed-hosts ${MLFLOW_ALLOWED_HOSTS:-mlflow,mlflow:5000,localhost,localhost:5000,127.0.0.1:5000}
+      --cors-allowed-origins ${MLFLOW_CORS_ORIGINS:-https://nova.tailb5cb87.ts.net:5443}
     volumes:
       - ./data/mlflow:/mlflow
     ports:
