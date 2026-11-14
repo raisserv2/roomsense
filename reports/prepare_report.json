@@ -1,35 +1,35 @@
 {
-  "frames_in": 56719,
-  "frames_kept": 56719,
+  "frames_in": 56796,
+  "frames_kept": 56796,
   "dropped": {},
   "bad_share": 0.0,
   "max_bad_share": 0.05,
-  "sessions": 107,
+  "sessions": 108,
   "per_class": {
     "lying_in_bed": 7896,
     "at_desk": 10291,
     "in_room": 865,
     "empty": 27170,
     "sitting_on_bed": 5367,
-    "lights_off": 5130
+    "lights_off": 5207
   },
   "per_lighting": {
     "tube_on": 37560,
-    "tube_off": 19159
+    "tube_off": 19236
   },
   "per_period": {
-    "day": 32181,
+    "day": 32258,
     "night": 24538
   },
   "sessions_per_class": {
+    "in_room": 15,
     "sitting_on_bed": 20,
     "at_desk": 31,
-    "in_room": 15,
-    "lying_in_bed": 12,
     "empty": 31,
-    "lights_off": 3
+    "lying_in_bed": 12,
+    "lights_off": 4
   },
   "first_frame": "2026-10-20T14:20:14.851863+05:30",
-  "last_frame": "2026-11-09T00:50:28.022756+05:30",
+  "last_frame": "2026-11-12T17:01:52.822284+05:30",
   "classes_without_frames": []
 }

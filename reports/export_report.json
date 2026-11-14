@@ -1,18 +1,18 @@
 {
   "exporter": "torchscript",
-  "temperature": 0.9592659491373328,
+  "temperature": 1.8353667256377388,
   "opset": 17,
   "onnx_size_mb": 6.11,
-  "parity_max_abs_diff": 1.33514404296875e-05,
+  "parity_max_abs_diff": 5.602836608886719e-06,
   "parity_argmax_agreement": 1.0,
-  "latency_ms_p50": 1.927945500028727,
-  "latency_ms_p95": 2.8499490499143576,
-  "preprocess_ms_p50_720p": 3.509685999915746,
+  "latency_ms_p50": 1.2887370000953524,
+  "latency_ms_p95": 1.3523146500347138,
+  "preprocess_ms_p50_720p": 3.5014159998354444,
   "bench_threads": 2,
-  "onnx_test_macro_f1": 0.65184522790455,
-  "onnx_test_accuracy": 0.6124260355029586,
+  "onnx_test_macro_f1": 0.5178155983253281,
+  "onnx_test_accuracy": 0.6022727272727273,
   "onnx_test_classes_absent": [],
-  "test_frames": 338,
-  "reference_brightness_mean": 93.58154434179977,
-  "reference_confidence_mean": 0.6489376425743103
+  "test_frames": 352,
+  "reference_brightness_mean": 92.05145220192846,
+  "reference_confidence_mean": 0.4005140960216522
 }

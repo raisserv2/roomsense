@@ -1,80 +1,80 @@
 {
-  "best_val_macro_f1": 0.6533474949216285,
+  "best_val_macro_f1": 0.5089719599520995,
   "best_epoch": 2,
-  "test_macro_f1": 0.6489868301870614,
-  "test_accuracy": 0.606508875739645,
+  "test_macro_f1": 0.5246342225242481,
+  "test_accuracy": 0.6051136363636364,
   "test_per_class_f1": {
-    "at_desk": 0.611353711790393,
-    "empty": 0.6050420168067226,
-    "in_room": 0.7272727272727273,
-    "lights_off": 0.8888888888888888,
-    "lying_in_bed": 0.43636363636363634,
-    "sitting_on_bed": 0.625
+    "at_desk": 0.7899159663865546,
+    "empty": 0.25225225225225223,
+    "in_room": 0.3188405797101449,
+    "lights_off": 0.7272727272727273,
+    "lying_in_bed": 0.25,
+    "sitting_on_bed": 0.8095238095238095
   },
   "test_support": {
-    "at_desk": 148,
+    "at_desk": 142,
     "empty": 90,
-    "in_room": 15,
-    "lights_off": 5,
-    "lying_in_bed": 38,
-    "sitting_on_bed": 42
+    "in_room": 25,
+    "lights_off": 7,
+    "lying_in_bed": 45,
+    "sitting_on_bed": 43
   },
   "test_classes_absent": [],
-  "train_seconds": 10.73,
-  "train_images_per_s": 1103.6,
-  "temperature": 0.9592659491373328,
-  "test_ece_before_calibration": 0.09259531184804566,
-  "test_ece_after_calibration": 0.10714774481677311,
-  "test_mean_confidence_before": 0.5706728850441495,
-  "test_mean_confidence_after": 0.5828042805984002,
+  "train_seconds": 9.51,
+  "train_images_per_s": 1248.4,
+  "temperature": 1.8353667256377388,
+  "test_ece_before_calibration": 0.08072364041860758,
+  "test_ece_after_calibration": 0.16026890108241834,
+  "test_mean_confidence_before": 0.6429382927224115,
+  "test_mean_confidence_after": 0.45589759652982437,
   "confusion_matrix": [
     [
-      70,
-      62,
+      141,
       0,
       0,
-      4,
-      12
+      0,
+      1,
+      0
     ],
     [
+      59,
+      14,
+      0,
+      0,
+      16,
+      1
+    ],
+    [
+      13,
+      0,
+      11,
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      3,
+      0,
+      4,
+      0,
+      0
+    ],
+    [
+      2,
+      0,
+      28,
+      0,
+      9,
+      6
+    ],
+    [
+      0,
+      4,
       5,
-      72,
       0,
       0,
-      0,
-      13
-    ],
-    [
-      2,
-      1,
-      12,
-      0,
-      0,
-      0
-    ],
-    [
-      0,
-      1,
-      0,
-      4,
-      0,
-      0
-    ],
-    [
-      4,
-      8,
-      4,
-      0,
-      12,
-      10
-    ],
-    [
-      0,
-      4,
-      2,
-      0,
-      1,
-      35
+      34
     ]
   ]
 }

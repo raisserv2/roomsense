@@ -1,11 +1,11 @@
 {
   "stage": "prepare",
   "status": "ok",
-  "started_at": "2026-11-12T08:23:54+00:00",
-  "git_commit": "34ace32b53e3b2ddeba097c360394fbf0e4656da",
-  "finished_at": "2026-11-12T08:23:55+00:00",
-  "duration_s": 0.714,
-  "items": 56719,
+  "started_at": "2026-11-14T14:25:33+00:00",
+  "git_commit": "d1eec02a6f99a8b2fac16f268a51536d81f7ab02",
+  "finished_at": "2026-11-14T14:25:33+00:00",
+  "duration_s": 0.689,
+  "items": 56796,
   "unit": "frames",
-  "throughput_per_s": 79438.375
+  "throughput_per_s": 82432.511
 }

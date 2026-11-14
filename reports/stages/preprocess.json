@@ -1,12 +1,12 @@
 {
   "stage": "preprocess",
   "status": "ok",
-  "started_at": "2026-11-12T08:24:05+00:00",
-  "git_commit": "34ace32b53e3b2ddeba097c360394fbf0e4656da",
-  "finished_at": "2026-11-12T08:24:53+00:00",
-  "duration_s": 48.34,
-  "items": 56719,
+  "started_at": "2026-11-14T14:25:43+00:00",
+  "git_commit": "d1eec02a6f99a8b2fac16f268a51536d81f7ab02",
+  "finished_at": "2026-11-14T14:26:27+00:00",
+  "duration_s": 44.604,
+  "items": 56796,
   "unit": "frames",
-  "throughput_per_s": 1173.335,
-  "ray_resize_fps": 5759.9
+  "throughput_per_s": 1273.339,
+  "ray_resize_fps": 6573.1
 }

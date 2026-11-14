@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-14T19:17:15+05:30",
-  "git_commit": "c7f411f57851091c1f67d09f402044e3463ac5b1",
+  "generated_at": "2026-11-14T19:57:40+05:30",
+  "git_commit": "d1eec02a6f99a8b2fac16f268a51536d81f7ab02",
   "thresholds": {
     "macro_f1_min": 0.6,
     "latency_ms_p95_max": 100,
@@ -16,7 +16,7 @@
     "failed": 0,
     "error": 0,
     "skipped": 0,
-    "seconds": 5.2,
+    "seconds": 4.8,
     "tail": [
       "...................                                                      [100%]"
     ]
@@ -39,21 +39,21 @@
     {
       "id": "AC-3",
       "criterion": "Test macro-F1 of the latest trained model (ONNX) is at least 0.60",
-      "measured": "0.652",
-      "status": "PASS",
+      "measured": "0.518",
+      "status": "FAIL",
       "source": "reports/export_report.json"
     },
     {
       "id": "AC-4",
       "criterion": "One prediction on 2 CPU threads takes at most 100 ms (p95)",
-      "measured": "2.8 ms",
+      "measured": "1.4 ms",
       "status": "PASS",
       "source": "reports/export_report.json"
     },
     {
       "id": "AC-5",
       "criterion": "ONNX and PyTorch outputs differ by less than 0.001",
-      "measured": "1.34e-05",
+      "measured": "5.60e-06",
       "status": "PASS",
       "source": "reports/export_report.json"
     },
@@ -81,7 +81,7 @@
     {
       "id": "AC-9",
       "criterion": "The Ray resize step handles at least 100 frames per second",
-      "measured": "5760 frames/s",
+      "measured": "6573 frames/s",
       "status": "PASS",
       "source": "reports/preprocess_report.json"
     },
@@ -95,8 +95,8 @@
     {
       "id": "AC-11",
       "criterion": "POST /predict answers within 500 ms (p95 of 30 requests, network included)",
-      "measured": "563 ms",
-      "status": "FAIL",
+      "measured": "316 ms",
+      "status": "PASS",
       "source": "POST https://nova.tailb5cb87.ts.net:4443/api/predict"
     },
     {

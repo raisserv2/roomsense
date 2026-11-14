@@ -1,12 +1,12 @@
 {
   "stage": "export",
   "status": "ok",
-  "started_at": "2026-11-12T08:25:36+00:00",
-  "git_commit": "34ace32b53e3b2ddeba097c360394fbf0e4656da",
-  "finished_at": "2026-11-12T08:25:39+00:00",
-  "duration_s": 2.971,
-  "items": 2412,
+  "started_at": "2026-11-14T14:27:10+00:00",
+  "git_commit": "d1eec02a6f99a8b2fac16f268a51536d81f7ab02",
+  "finished_at": "2026-11-14T14:27:12+00:00",
+  "duration_s": 2.644,
+  "items": 2419,
   "unit": "frames",
-  "throughput_per_s": 811.848,
-  "latency_ms_p95": 2.8499490499143576
+  "throughput_per_s": 914.902,
+  "latency_ms_p95": 1.3523146500347138
 }

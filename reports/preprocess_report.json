@@ -1,9 +1,9 @@
 {
-  "frames_in": 56719,
-  "after_trim": 56131,
+  "frames_in": 56796,
+  "after_trim": 56202,
   "unreadable": 0,
-  "kept": 2412,
-  "sessions": 107,
+  "kept": 2419,
+  "sessions": 108,
   "faces_blurred_total": 0,
   "kept_per_class": {
     "at_desk": 964,
@@ -11,23 +11,23 @@
     "sitting_on_bed": 329,
     "lying_in_bed": 321,
     "in_room": 156,
-    "lights_off": 44
+    "lights_off": 51
   },
   "ray_cpus": 24,
   "chunk_size": 200,
   "embed_device": "cuda",
   "seconds": {
     "trim": 0.012,
-    "ray_resize": 9.745,
-    "embed": 20.835,
-    "ray_kmeans": 10.629,
-    "write": 0.343,
-    "plots": 2.019
+    "ray_resize": 8.55,
+    "embed": 18.896,
+    "ray_kmeans": 10.142,
+    "write": 0.373,
+    "plots": 1.325
   },
   "throughput_fps": {
-    "ray_resize": 5759.9,
-    "embed": 2694.1,
-    "ray_kmeans": 5280.7,
-    "end_to_end": 1301.4
+    "ray_resize": 6573.1,
+    "embed": 2974.3,
+    "ray_kmeans": 5541.4,
+    "end_to_end": 1445.3
   }
 }

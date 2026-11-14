@@ -1,11 +1,11 @@
 {
   "stage": "split",
   "status": "ok",
-  "started_at": "2026-11-12T08:24:58+00:00",
-  "git_commit": "34ace32b53e3b2ddeba097c360394fbf0e4656da",
-  "finished_at": "2026-11-12T08:25:06+00:00",
-  "duration_s": 7.682,
-  "items": 2412,
+  "started_at": "2026-11-14T14:26:31+00:00",
+  "git_commit": "d1eec02a6f99a8b2fac16f268a51536d81f7ab02",
+  "finished_at": "2026-11-14T14:26:39+00:00",
+  "duration_s": 7.644,
+  "items": 2419,
   "unit": "frames",
-  "throughput_per_s": 313.981
+  "throughput_per_s": 316.457
 }

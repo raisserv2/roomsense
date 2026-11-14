@@ -2,65 +2,70 @@
   "returncode": 0,
   "stages": {
     "prepare": {
-      "status": "cached",
-      "seconds": 0.714,
-      "items": 56719,
+      "status": "ok",
+      "wall_seconds": 5.989,
+      "seconds": 0.689,
+      "items": 56796,
       "unit": "frames",
-      "throughput_per_s": 79438.375,
-      "finished_at": "2026-11-12T08:23:55+00:00"
+      "throughput_per_s": 82432.511,
+      "finished_at": "2026-11-14T14:25:33+00:00"
     },
     "preprocess": {
-      "status": "cached",
-      "seconds": 48.34,
-      "items": 56719,
+      "status": "ok",
+      "wall_seconds": 52.865,
+      "seconds": 44.604,
+      "items": 56796,
       "unit": "frames",
-      "throughput_per_s": 1173.335,
-      "finished_at": "2026-11-12T08:24:53+00:00"
+      "throughput_per_s": 1273.339,
+      "finished_at": "2026-11-14T14:26:27+00:00"
     },
     "split": {
-      "status": "cached",
-      "seconds": 7.682,
-      "items": 2412,
+      "status": "ok",
+      "wall_seconds": 7.926,
+      "seconds": 7.644,
+      "items": 2419,
       "unit": "frames",
-      "throughput_per_s": 313.981,
-      "finished_at": "2026-11-12T08:25:06+00:00"
+      "throughput_per_s": 316.457,
+      "finished_at": "2026-11-14T14:26:39+00:00"
     },
     "train": {
-      "status": "cached",
-      "seconds": 22.567,
-      "items": 11837,
+      "status": "ok",
+      "wall_seconds": 28.455,
+      "seconds": 23.578,
+      "items": 11872,
       "unit": "images",
-      "throughput_per_s": 524.527,
-      "finished_at": "2026-11-12T08:25:32+00:00"
+      "throughput_per_s": 503.52,
+      "finished_at": "2026-11-14T14:27:06+00:00"
     },
     "export": {
-      "status": "cached",
-      "seconds": 2.971,
-      "items": 2412,
+      "status": "ok",
+      "wall_seconds": 5.118,
+      "seconds": 2.644,
+      "items": 2419,
       "unit": "frames",
-      "throughput_per_s": 811.848,
-      "finished_at": "2026-11-12T08:25:39+00:00"
+      "throughput_per_s": 914.902,
+      "finished_at": "2026-11-14T14:27:12+00:00"
     },
     "register": {
       "status": "ok",
-      "wall_seconds": 11.455,
-      "seconds": 10.216,
-      "items": 338,
+      "wall_seconds": 14.21,
+      "seconds": 12.805,
+      "items": 352,
       "unit": "frames",
-      "throughput_per_s": 33.085,
-      "finished_at": "2026-11-12T08:34:04+00:00"
+      "throughput_per_s": 27.489,
+      "finished_at": "2026-11-14T14:27:27+00:00"
     }
   },
-  "seconds": 14.926,
+  "seconds": 121.195,
   "failed_stage": null,
-  "git_commit": "bd4003655aed54d9f0e4105d0994ca7864016fc4",
+  "git_commit": "d1eec02a6f99a8b2fac16f268a51536d81f7ab02",
   "git_dirty": true,
-  "data_version": "25c5b5c6095e6cb439592f8f762ba159.dir",
+  "data_version": "08c3504bd66114eaf1570134884ec96c.dir",
   "trigger": "manual",
-  "reason": "fair promotion gate",
+  "reason": "final run",
   "host": "legion",
-  "started_at": "2026-11-12T08:33:49+00:00",
-  "finished_at": "2026-11-12T08:34:04+00:00",
+  "started_at": "2026-11-14T14:25:26+00:00",
+  "finished_at": "2026-11-14T14:27:27+00:00",
   "status": "ok",
   "dag": {
     "stages": [
@@ -212,17 +217,17 @@
     ]
   },
   "headline": {
-    "frames_raw": 56719,
-    "frames_valid": 56719,
-    "frames_kept": 2412,
-    "sessions": 107,
-    "ray_resize_fps": 5759.9,
-    "preprocess_fps": 1301.4,
-    "train_images_per_s": 1103.6,
-    "test_macro_f1": 0.65184522790455,
-    "latency_ms_p95": 2.8499490499143576,
-    "model_version": "4",
+    "frames_raw": 56796,
+    "frames_valid": 56796,
+    "frames_kept": 2419,
+    "sessions": 108,
+    "ray_resize_fps": 6573.1,
+    "preprocess_fps": 1445.3,
+    "train_images_per_s": 1248.4,
+    "test_macro_f1": 0.5178155983253281,
+    "latency_ms_p95": 1.3523146500347138,
+    "model_version": "5",
     "promoted": false
   },
-  "mlflow_run_id": "5ce1b80536ae414baabe453a294fac26"
+  "mlflow_run_id": "a9f3ae875ee346f18f3c7cd1d266ae1b"
 }

@@ -1,13 +1,13 @@
 {
   "stage": "train",
   "status": "ok",
-  "started_at": "2026-11-12T08:25:10+00:00",
-  "git_commit": "34ace32b53e3b2ddeba097c360394fbf0e4656da",
-  "finished_at": "2026-11-12T08:25:32+00:00",
-  "duration_s": 22.567,
-  "items": 11837,
+  "started_at": "2026-11-14T14:26:43+00:00",
+  "git_commit": "d1eec02a6f99a8b2fac16f268a51536d81f7ab02",
+  "finished_at": "2026-11-14T14:27:06+00:00",
+  "duration_s": 23.578,
+  "items": 11872,
   "unit": "images",
-  "throughput_per_s": 524.527,
-  "test_macro_f1": 0.6489868301870614,
-  "run_id": "258d36e04fa5441486fd82a71c7f0cf2"
+  "throughput_per_s": 503.52,
+  "test_macro_f1": 0.5246342225242481,
+  "run_id": "844ba28e808445df81c46c34c7b00c5b"
 }
