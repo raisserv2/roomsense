@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-14T13:31:40+00:00",
-  "git_commit": "525b594ddb197d656edaf57023595eb217a9ecc7",
+  "generated_at": "2026-11-14T19:17:15+05:30",
+  "git_commit": "c7f411f57851091c1f67d09f402044e3463ac5b1",
   "thresholds": {
     "macro_f1_min": 0.6,
     "latency_ms_p95_max": 100,
@@ -16,7 +16,7 @@
     "failed": 0,
     "error": 0,
     "skipped": 0,
-    "seconds": 15.5,
+    "seconds": 5.2,
     "tail": [
       "...................                                                      [100%]"
     ]
@@ -84,6 +84,41 @@
       "measured": "5760 frames/s",
       "status": "PASS",
       "source": "reports/preprocess_report.json"
+    },
+    {
+      "id": "AC-10",
+      "criterion": "The API is up and serving a model",
+      "measured": "model v2",
+      "status": "PASS",
+      "source": "GET https://nova.tailb5cb87.ts.net:4443/api/health"
+    },
+    {
+      "id": "AC-11",
+      "criterion": "POST /predict answers within 500 ms (p95 of 30 requests, network included)",
+      "measured": "563 ms",
+      "status": "FAIL",
+      "source": "POST https://nova.tailb5cb87.ts.net:4443/api/predict"
+    },
+    {
+      "id": "AC-12",
+      "criterion": "Prometheus metrics are exposed",
+      "measured": "yes",
+      "status": "PASS",
+      "source": "GET https://nova.tailb5cb87.ts.net:4443/api/metrics"
+    },
+    {
+      "id": "AC-13",
+      "criterion": "The pipeline console answers and MLflow is reachable",
+      "measured": "yes",
+      "status": "PASS",
+      "source": "GET https://nova.tailb5cb87.ts.net:4443/api/pipeline"
+    },
+    {
+      "id": "AC-14",
+      "criterion": "The latest pipeline run succeeded",
+      "measured": "yes",
+      "status": "PASS",
+      "source": "GET https://nova.tailb5cb87.ts.net:4443/api/pipeline"
     }
   ]
 }
