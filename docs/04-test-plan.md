@@ -116,6 +116,12 @@ The software is accepted when all of these hold. Thresholds are in `params.yaml`
 | AC-16 | Retrain restores a non-drifting state | share < 50%, alert resolved | TC-E2E-2 |
 | AC-17 | A non-technical person can read the Live page | yes | TC-UI-9 |
 
+### Result of the final run (14 Nov 2026)
+
+13 of the 14 measured criteria are met (see [05-test-report.md](05-test-report.md)). **AC-3 is not met:** the final model (v5) scored 0.518 macro-F1 on its test split, below the 0.60 threshold. It was not promoted, and the champion remains v2.
+
+The threshold was kept as defined rather than lowered after the fact. The miss reflects how small and unstable the test split is, not a regression in the code: the previous candidate (v3) scored 0.652 two days earlier on almost the same data. The split is recomputed whenever the dataset grows, and the classes other than `at_desk` have only 7 to 45 test frames each, so one session landing in a different split moves the score by about 0.1. The fix is a "sticky" split that keeps earlier session assignments, plus more sessions for the rare classes (see the HLD, section 5).
+
 ## 6. Defect handling
 
 A failing test blocks the merge. Failures found in manual testing are fixed on a branch, a regression test is added where one can be automated, and the report is regenerated.
