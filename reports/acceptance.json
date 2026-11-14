@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-11-11T19:02:03+00:00",
-  "git_commit": "2497c3dabd77673b7e474be3c4c49f7fe3ace5e1",
+  "generated_at": "2026-11-14T13:31:40+00:00",
+  "git_commit": "525b594ddb197d656edaf57023595eb217a9ecc7",
   "thresholds": {
     "macro_f1_min": 0.6,
     "latency_ms_p95_max": 100,
@@ -11,21 +11,21 @@
   },
   "tests": {
     "returncode": 0,
-    "total": 86,
-    "passed": 86,
+    "total": 91,
+    "passed": 91,
     "failed": 0,
     "error": 0,
     "skipped": 0,
-    "seconds": 5.7,
+    "seconds": 15.5,
     "tail": [
-      "..............                                                           [100%]"
+      "...................                                                      [100%]"
     ]
   },
   "criteria": [
     {
       "id": "AC-1",
       "criterion": "Every automated test passes",
-      "measured": "86 of 86 passed, 0 failed",
+      "measured": "91 of 91 passed, 0 failed",
       "status": "PASS",
       "source": "pytest"
     },
@@ -38,22 +38,22 @@
     },
     {
       "id": "AC-3",
-      "criterion": "Test macro-F1 of the served (ONNX) model is at least 0.60",
-      "measured": "0.615",
+      "criterion": "Test macro-F1 of the latest trained model (ONNX) is at least 0.60",
+      "measured": "0.652",
       "status": "PASS",
       "source": "reports/export_report.json"
     },
     {
       "id": "AC-4",
       "criterion": "One prediction on 2 CPU threads takes at most 100 ms (p95)",
-      "measured": "2.3 ms",
+      "measured": "2.8 ms",
       "status": "PASS",
       "source": "reports/export_report.json"
     },
     {
       "id": "AC-5",
       "criterion": "ONNX and PyTorch outputs differ by less than 0.001",
-      "measured": "1.98e-05",
+      "measured": "1.34e-05",
       "status": "PASS",
       "source": "reports/export_report.json"
     },
@@ -74,15 +74,15 @@
     {
       "id": "AC-8",
       "criterion": "At most 5% of the raw rows fail the data quality checks",
-      "measured": "not measured yet",
-      "status": "NOT MEASURED",
+      "measured": "0.00%",
+      "status": "PASS",
       "source": "reports/prepare_report.json"
     },
     {
       "id": "AC-9",
       "criterion": "The Ray resize step handles at least 100 frames per second",
-      "measured": "not measured yet",
-      "status": "NOT MEASURED",
+      "measured": "5760 frames/s",
+      "status": "PASS",
       "source": "reports/preprocess_report.json"
     }
   ]

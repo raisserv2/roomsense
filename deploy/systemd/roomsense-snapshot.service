@@ -1,0 +1,12 @@
+# Nightly dataset snapshot on nova (see scripts/nightly-snapshot.sh).
+# Install: sudo cp deploy/systemd/roomsense-snapshot.* /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now roomsense-snapshot.timer
+[Unit]
+Description=Nightly RoomSense dataset snapshot (DVC + Git)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=raisser
+ExecStart=/home/raisser/roomsense/scripts/nightly-snapshot.sh

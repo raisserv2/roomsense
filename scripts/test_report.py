@@ -106,7 +106,7 @@ def offline_criteria(tests: dict, lint: dict, th: dict) -> list:
         criterion("AC-2", "The code follows PEP 8 (ruff reports no violation)",
                   "ruff not installed" if lint["violations"] is None else f"{lint['violations']} violations",
                   None if lint["violations"] is None else lint["violations"] == 0, "ruff check ."),
-        criterion("AC-3", f"Test macro-F1 of the served (ONNX) model is at least {th['macro_f1_min']:.2f}",
+        criterion("AC-3", f"Test macro-F1 of the latest trained model (ONNX) is at least {th['macro_f1_min']:.2f}",
                   fmt(f1, ".3f"), above(f1, th["macro_f1_min"]), "reports/export_report.json"),
         criterion("AC-4", f"One prediction on 2 CPU threads takes at most {th['latency_ms_p95_max']:.0f} ms (p95)",
                   fmt(p95, ".1f") + (" ms" if p95 is not None else ""), below(p95, th["latency_ms_p95_max"]),
