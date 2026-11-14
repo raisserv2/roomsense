@@ -94,13 +94,13 @@ Every case is listed individually with its result in the test report, section 4.
 
 ## 5. Acceptance criteria
 
-The software is accepted when all of these hold. Thresholds are in `params.yaml` (`acceptance:`), so they are versioned with the code. `scripts/test_report.py` measures AC-1 to AC-14 and writes the result into the test report; AC-15 to AC-17 are shown in the demo video.
+The software is accepted when all of these hold. Thresholds are in `params.yaml` (`acceptance:`), so they are versioned with the code. `scripts/test_report.py` measures AC-1 to AC-14 and writes the result into the test report; AC-15 to AC-17 are checked by hand (section 4.3) and shown in the demo video.
 
 | ID | Criterion | Threshold | Why this number |
 |---|---|---|---|
 | AC-1 | Every automated test passes | 0 failures | Basic correctness |
-| AC-2 | Code follows PEP 8 | 0 `ruff` violations | Rubric: standard coding style |
-| AC-3 | Test macro-F1 of the served ONNX model | ≥ 0.60 | Six classes: chance is about 0.17. 0.60 means the model is clearly useful while leaving room for the known hard pair (sitting vs lying on the bed) |
+| AC-2 | Code follows PEP 8 | 0 `ruff` violations | Standard Python coding style |
+| AC-3 | Test macro-F1 of the latest trained model (ONNX) | ≥ 0.60 | Six classes: chance is about 0.17. 0.60 means the model is clearly useful while leaving room for the known hard pair (sitting vs lying on the bed) |
 | AC-4 | One prediction on 2 CPU threads, p95 | ≤ 100 ms | A frame arrives every 5 s; 100 ms keeps nova's CPU almost idle |
 | AC-5 | ONNX vs PyTorch outputs | max difference < 0.001 | What is served must be what was evaluated |
 | AC-6 | No session shared between splits | enforced by test | No leakage |

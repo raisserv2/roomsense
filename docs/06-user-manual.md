@@ -2,7 +2,7 @@
 
 For anyone who wants to use RoomSense. No technical knowledge needed.
 
-> The screenshots in this copy were taken on a test set-up with a drawn sample room instead of the real camera picture. The pages look the same on the real system.
+> To keep the room private, the screenshots show a drawn sample room instead of the real camera picture. Everything else on the pages looks the same.
 
 ## 1. What RoomSense does
 

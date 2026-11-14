@@ -8,16 +8,14 @@
 | 4 | [Test plan and test cases](04-test-plan.md) | Levels, cases, acceptance criteria |
 | 5 | [Test report](05-test-report.md) | Generated: counts, every case, criteria met |
 | 6 | [User manual](06-user-manual.md) | For a non-technical user, with screenshots |
-| 7 | [Viva question sheet](07-viva-qa.md) | Preparation notes |
-| 8 | [Demo video shot list](08-demo-video.md) | Scene by scene |
 
 PDF copies are in [`pdf/`](pdf/). Diagrams (SVG, PNG, PDF) and the script that draws them are in [`diagrams/`](diagrams/); icon credits in [`diagrams/CREDITS.md`](diagrams/CREDITS.md).
 
-## Where each evaluation item is covered
+## Where each requirement is covered
 
 ### Demonstration
 
-| Rubric item | Where |
+| Requirement | Where |
 |---|---|
 | Intuitive UI for a non-technical user, foolproof, no UI errors, responsive | `deploy/frontend/site/` · Live room page with plain-language states, empty/error states, upload validation · test cases TC-UI-1 to TC-UI-9 |
 | User manual | [06-user-manual.md](06-user-manual.md) and the in-app Help page |
@@ -28,7 +26,7 @@ PDF copies are in [`pdf/`](pdf/). Diagrams (SVG, PNG, PDF) and the script that d
 
 ### Software engineering
 
-| Rubric item | Where |
+| Requirement | Where |
 |---|---|
 | Design document, paradigm | [02-hld.md](02-hld.md) section 3 |
 | LLD with endpoint definitions and I/O specification | [03-lld.md](03-lld.md) sections 2 and 3 |
@@ -43,7 +41,7 @@ PDF copies are in [`pdf/`](pdf/). Diagrams (SVG, PNG, PDF) and the script that d
 
 ### AIOps
 
-| Rubric item | Where |
+| Requirement | Where |
 |---|---|
 | Data ingestion / transformation pipeline with Ray | `capture/` (ingestion), `scripts/prepare.py`, `scripts/preprocess.py` (`@ray.remote`) |
 | Throughput and speed | `reports/preprocess_report.json` (`seconds`, `throughput_fps`), `reports/stages/*.json`, MLflow experiment `roomsense-pipeline` |

@@ -32,44 +32,76 @@ Every camera frame's brightness goes into a rolling window (120 frames, about 10
 
 **Demo recipe:** set `data.include: {lighting: [tube_on]}` in `params.yaml`, `dvc repro`, and the champion now only knows the tube-light-on room. Switch the tube light off: within about 10 minutes the drift alert fires and a retrain is requested. Set `data.include: {}`, run `python scripts/retrain.py`, and the alert resolves.
 
+## Repository layout
+
+| Path | What |
+|---|---|
+| `capture/` | Data ingestion service (FastAPI): label buttons, review tool, `/metrics` |
+| `roomsense/` | Shared library used by training and serving: preprocessing, drift, calibration, metrics, registry |
+| `scripts/` | The six DVC stages, the pipeline runner, retrain, rollback, test report, nightly snapshot |
+| `dvc.yaml`, `params.yaml`, `dvc.lock` | The pipeline (DAG), its parameters, and the exact versions of its last run |
+| `data/raw.dvc` | Fingerprint of the dataset version (the images themselves are not in Git) |
+| `MLproject`, `python_env.yaml` | MLflow Project: entry points and the one Python environment |
+| `deploy/` | Serving and monitoring stack (Docker Compose), Prometheus rules, Grafana dashboard, systemd timer |
+| `tests/` | 91 automated tests |
+| `docs/` | Architecture, HLD, LLD, test plan, test report, user manual, diagrams, PDFs |
+
 ## Setup
 
-### nova (serving + monitoring)
-```bash
-cd ~/roomsense
-cp -a data/trash ~/trash-backup          # git pull removes the trash files Git used to track
-git pull
-cp -an ~/trash-backup/. data/trash/      # put them back (now ignored by Git)
+RoomSense runs on two Ubuntu 26.04 machines joined by a Tailscale network:
 
-docker network create roomsense          # once: shared by capture and the serving stack
-(cd capture && docker compose up -d)     # capture joins the shared network
+- **nova** (any always-on Linux box, 8 GB RAM is enough): Docker + Compose, Tailscale, Python 3 with `dvc`, and the dataset drive mounted at `/mnt/photos`.
+- **Legion** (training, NVIDIA GPU): Python 3.12, `uv`, CUDA drivers, Tailscale, SSH access to nova.
+
+**Data.** The images are pictures of a private room, so they are not in this repository. They live on nova (`data/raw/`) and in the DVC remote on nova's drive (`/mnt/photos/dvc-store`, see `.dvc/config`). Git holds only `data/raw.dvc`, the fingerprint of each dataset version. The Legion reaches the same remote over SSH. Everything except training on the real data (the tests, the services, the UI) works without the images.
+
+### 1. nova: capture, serving and monitoring
+
+```bash
+git clone git@github.com:raisserv2/roomsense.git ~/roomsense && cd ~/roomsense
+pip install --user dvc
+
+docker network create roomsense                 # shared by capture and the serving stack
+
+cp capture/.env.example capture/.env && chmod 600 capture/.env && nano capture/.env   # camera URL + login
+(cd capture && docker compose up -d --build)    # capture service on 127.0.0.1:8100
 
 cd deploy
-cp .env.example .env && nano .env        # CAM_PASS, Telegram bot token + chat id, Grafana password
+cp .env.example .env && chmod 600 .env && nano .env   # CAM_PASS, Telegram token + chat id, Grafana password
 mkdir -p data/{mlflow,api,prometheus,alertmanager,grafana}
-docker compose up -d --build
+docker compose up -d --build                    # 9 services
 docker compose ps
 
+# HTTPS inside the tailnet only (Funnel stays off)
 sudo tailscale serve --bg --https=4443 http://127.0.0.1:8200   # RoomSense UI
 sudo tailscale serve --bg --https=5443 http://127.0.0.1:5000   # MLflow
 sudo tailscale serve --bg --https=3443 http://127.0.0.1:3300   # Grafana
 sudo tailscale serve --bg --https=6443 http://127.0.0.1:9091   # Prometheus
+sudo tailscale serve --bg --https=7443 http://127.0.0.1:8100   # capture
+
+# nightly dataset snapshot at 03:30 (DVC add + push to the drive, Git push of the fingerprint)
+sudo cp ~/roomsense/deploy/systemd/roomsense-snapshot.* /etc/systemd/system/
+sudo systemctl daemon-reload && sudo systemctl enable --now roomsense-snapshot.timer
 ```
 
-### Legion (training)
+Then open `https://nova.<tailnet>.ts.net:7443` on the phone and record labelled sessions. Never run `dvc pull` or `dvc repro` on nova: it owns the live data.
+
+### 2. Legion: training
+
 ```bash
-cd ~/roomsense && source .venv/bin/activate
-git stash                                # local edits are already in this version
-git pull
+git clone git@github.com:raisserv2/roomsense.git ~/roomsense && cd ~/roomsense
+uv venv --python 3.12 .venv && source .venv/bin/activate
 uv pip install -r requirements.txt -r requirements-dev.txt "mlflow==3.17.2"
-pytest                                   # 91 tests
-ruff check .                             # PEP 8
+dvc remote modify --local seagate url ssh://raisser@nova/mnt/photos/dvc-store   # reach nova's drive over SSH
 echo 'export MLFLOW_TRACKING_URI=https://nova.tailb5cb87.ts.net:5443' >> ~/.bashrc && source ~/.bashrc
-python scripts/run_pipeline.py           # dvc repro + records the run (status, timings, throughput) in MLflow
-dvc push && git add dvc.lock reports && git commit -m "pipeline run" && git push
+
+pytest && ruff check .                          # 91 tests, PEP 8
+dvc pull                                        # the dataset version pinned in data/raw.dvc
+python scripts/run_pipeline.py                  # dvc repro + records the run in MLflow
+dvc push && git add dvc.lock models/.gitignore reports && git commit -m "pipeline run" && git push
 ```
 
-Within a minute, the UI at `https://nova.tailb5cb87.ts.net:4443` shows the live room state.
+If the new model beats the champion, nova's API serves it within a minute, and `https://nova.tailb5cb87.ts.net:4443` shows the live room state.
 
 ### Day-to-day
 | Task | Command |
