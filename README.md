@@ -4,6 +4,8 @@ Classifies the state of a hostel room (`at_desk`, `lying_in_bed`, `sitting_on_be
 
 ![RoomSense architecture](docs/diagrams/01-architecture.png)
 
+**Demo video:** [watch on Google Drive](https://drive.google.com/file/d/1YcPyV3smMiM-jK5kJkJ4iBxO_-0Pdiks/view?usp=sharing) (about 5 minutes)
+
 **Documents** (in [`docs/`](docs/README.md)): [architecture](docs/01-architecture.md) · [high-level design](docs/02-hld.md) · [low-level design with the API specification](docs/03-lld.md) · [test plan](docs/04-test-plan.md) · [test report](docs/05-test-report.md) · [user manual](docs/06-user-manual.md)
 
 All web UIs are reachable only inside the tailnet (Tailscale Serve, HTTPS). Every Docker port is bound to `127.0.0.1`.
@@ -31,6 +33,16 @@ All web UIs are reachable only inside the tailnet (Tailscale Serve, HTTPS). Ever
 Every camera frame's brightness goes into a rolling window (120 frames, about 10 minutes). The API compares the window with the training frames: the **unseen-lighting share** is the share of recent frames whose brightness falls in a range the model (almost) never saw in training. When it stays above 50 % for 5 minutes, Prometheus fires `RoomSenseDrift`. Alertmanager notifies Telegram and calls the API webhook, which raises the **retrain flag**. On the Legion, `scripts/retrain.py` sees the flag, pulls the newest nightly snapshot, reruns the pipeline, and the `register` stage promotes the new model if it beats the old one on test sessions neither has trained on. The API hot-reloads the new champion within a minute. Its reference statistics now cover the new lighting, so the drift signal drops back. PSI is also computed and shown, but it isn't used for alerting, because on a short window it is high even without drift. While a capture session is recording, its label is used as ground truth, so the dashboard also shows **live accuracy**.
 
 **Demo recipe:** set `data.include: {lighting: [tube_on]}` in `params.yaml`, `dvc repro`, and the champion now only knows the tube-light-on room. Switch the tube light off: within about 10 minutes the drift alert fires and a retrain is requested. Set `data.include: {}`, run `python scripts/retrain.py`, and the alert resolves.
+
+## Results
+
+| | |
+|---|---|
+| Dataset | 56,796 labelled frames in 108 sessions, 6 classes |
+| Serving model | v2 (champion): MobileNetV3-Small in ONNX, under 3 ms per prediction on 2 CPU threads (p95) |
+| Pipeline | All six stages in about 2 minutes on the Legion; Ray resizes about 6,600 frames/s |
+| Tests | 91 of 91 pass; `ruff` clean |
+| Acceptance criteria | 13 of 14 met. AC-3 (macro-F1 ≥ 0.60) is not met by the final model, v5 (0.518), which therefore was not promoted. The reason is the small, reshuffling test split; see [the test plan](docs/04-test-plan.md#result-of-the-final-run-14-nov-2026). |
 
 ## Repository layout
 
@@ -139,3 +151,7 @@ Prometheus scrapes eight jobs: the API, the capture service, the frontend (nginx
 ## Privacy
 
 Frames never leave the room network and my own drives (Tailscale only, Funnel off, no cloud). The camera is covered when guests are in. Face blurring with a Haar detector was tried in `preprocess`, found unreliable (missed faces, blurred furniture), and is switched off (`blur_faces: false`). A stronger detector is future work.
+
+## Use of AI
+
+Claude (Anthropic) was used as a coding assistant: drafting code, tests, documentation and diagrams. The project idea, the design choices, the hardware and network setup, the data collection and labelling, running the training and the deployment, and checking every result are my own work.
