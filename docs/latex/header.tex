@@ -1,0 +1,154 @@
+% RoomSense document style (used by docs/build_pdfs.py through pandoc -H)
+\usepackage[table]{xcolor}
+\usepackage{tikz}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{pifont}
+\usepackage{newunicodechar}
+\usepackage{lastpage}
+\usepackage[most]{tcolorbox}
+\usepackage{microtype}
+
+% ---------- palette ----------
+\definecolor{ink}{HTML}{1B2430}
+\definecolor{muted}{HTML}{5B6675}
+\definecolor{accent}{HTML}{2F4FA8}   % indigo
+\definecolor{accent2}{HTML}{0E8A7E}  % teal
+\definecolor{accent3}{HTML}{E08A1E}  % amber
+\definecolor{rule}{HTML}{C9D3E3}
+\definecolor{rowtint}{HTML}{F4F7FC}
+\definecolor{codebg}{HTML}{F5F7FA}
+\definecolor{codefg}{HTML}{8A3B12}
+\definecolor{okgreen}{HTML}{1E8E3E}
+\definecolor{badred}{HTML}{C62828}
+\color{ink}
+
+% ---------- type ----------
+\linespread{1.08}
+\captionsetup{font={small,sf}, labelfont={bf,color=accent}, labelsep=period, skip=6pt}
+\captionsetup[table]{position=above}
+
+% ---------- headings ----------
+\titleformat{\section}{\sffamily\Large\bfseries\color{ink}}{}{0pt}{}
+\titlespacing*{\section}{0pt}{18pt}{6pt}
+\titleformat{\subsection}{\sffamily\large\bfseries\color{accent}}{}{0pt}{}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+\titleformat{\subsubsection}{\sffamily\normalsize\bfseries\color{ink}}{}{0pt}{}
+\titlespacing*{\subsubsection}{0pt}{10pt}{3pt}
+\titleformat{\paragraph}[runin]{\sffamily\normalsize\bfseries\color{ink}}{}{0pt}{}
+\newcommand{\secnum}[1]{\textcolor{accent2}{#1}\hspace{0.55em}}
+
+% ---------- figures ----------
+\floatplacement{figure}{H}
+\makeatletter
+\def\maxheight{\ifdim\Gin@nat@height>0.42\textheight 0.42\textheight\else\Gin@nat@height\fi}
+\makeatother
+
+% short tables are typeset as tabular (kept on one page) inside this environment
+\newenvironment{rstable}{\par\smallskip\begin{center}\small\rowcolors{2}{white}{rowtint}}{\end{center}\smallskip}
+
+% ---------- contents ----------
+\usepackage{tocloft}
+\renewcommand{\cfttoctitlefont}{\sffamily\large\bfseries\color{ink}}
+\renewcommand{\cftsecfont}{\small}
+\renewcommand{\cftsecpagefont}{\small\color{muted}}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\setlength{\cftbeforesecskip}{1pt}
+\setlength{\cftbeforetoctitleskip}{4pt}
+\setlength{\cftaftertoctitleskip}{6pt}
+
+% ---------- lists ----------
+\setlist[itemize,1]{label={\color{accent}\small\textbullet}, leftmargin=1.4em}
+\setlist[itemize,2]{label={\color{accent2}\scriptsize$\blacktriangleright$}}
+\setlist[enumerate]{leftmargin=1.6em}
+
+% ---------- tables ----------
+\arrayrulecolor{rule}
+\setlength{\aboverulesep}{0pt}
+\setlength{\belowrulesep}{0pt}
+\renewcommand{\arraystretch}{1.35}
+\setlength{\tabcolsep}{5pt}
+\AtBeginEnvironment{longtable}{\small\rowcolors{2}{white}{rowtint}}
+\newcommand{\rsthead}{\leavevmode\sffamily\bfseries\color{accent}}
+
+% ---------- inline code and code blocks ----------
+\newcommand{\inlinecode}{\leavevmode\color{codefg}}
+\makeatletter
+\@ifundefined{Shaded}{}{%
+  \renewenvironment{Shaded}{%
+    \begin{tcolorbox}[breakable, enhanced, colback=codebg, colframe=codebg,
+      boxrule=0pt, arc=2pt, left=6pt, right=6pt, top=4pt, bottom=4pt,
+      borderline west={2pt}{0pt}{accent2}, fontupper=\small]}{\end{tcolorbox}}}
+\makeatother
+
+\usepackage{fvextra}
+\makeatletter
+\@ifundefined{Highlighting}{}{\RecustomVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\},breaklines,breakanywhere}}
+\makeatother
+
+% ---------- block quotes ----------
+\tcolorboxenvironment{quote}{breakable, enhanced, blanker, before skip=6pt, after skip=6pt,
+  left=10pt, borderline west={2.5pt}{0pt}{accent3}, fontupper=\color{muted}}
+
+% ---------- abstract ----------
+\newenvironment{rsabstract}{%
+  \begin{tcolorbox}[enhanced, breakable, colback=rowtint, colframe=rowtint, boxrule=0pt, arc=2pt,
+    left=10pt, right=10pt, top=8pt, bottom=8pt, borderline west={3pt}{0pt}{accent}]
+  {\sffamily\footnotesize\bfseries\color{accent}ABSTRACT}\par\smallskip\small}%
+  {\end{tcolorbox}\medskip}
+
+% ---------- symbols ----------
+\newcommand{\rslock}{\tikz[baseline=-0.1ex,scale=0.11]{%
+  \draw[accent, line width=0.9pt] (0.6,1.1) -- (0.6,1.7) arc (180:0:0.65) -- (1.9,1.1);
+  \fill[accent, rounded corners=0.6pt] (0,-0.4) rectangle (2.5,1.2);}}
+\newunicodechar{✅}{\textcolor{okgreen}{\ding{51}}}
+\newunicodechar{✓}{\textcolor{okgreen}{\ding{51}}}
+\newunicodechar{❌}{\textcolor{badred}{\ding{55}}}
+\newunicodechar{✗}{\textcolor{badred}{\ding{55}}}
+\newunicodechar{🔒}{\rslock}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+\newunicodechar{≤}{\ensuremath{\leq}}
+\newunicodechar{≥}{\ensuremath{\geq}}
+\newunicodechar{≈}{\ensuremath{\approx}}
+\newunicodechar{≠}{\ensuremath{\neq}}
+\newunicodechar{−}{\ensuremath{-}}
+\newunicodechar{⁻}{\textsuperscript{\ensuremath{-}}}
+\newunicodechar{⁶}{\textsuperscript{6}}
+
+% ---------- page style ----------
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[L]{\sffamily\footnotesize\color{muted}\textbf{\color{accent}RoomSense}\hspace{0.5em}\textcolor{rule}{|}\hspace{0.5em}\doctype}
+\fancyhead[R]{\sffamily\footnotesize\color{muted}DA3408 AIOps}
+\fancyfoot[C]{\sffamily\footnotesize\color{muted}\thepage\ /\ \pageref*{LastPage}}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\sffamily\footnotesize\color{muted}\thepage\ /\ \pageref*{LastPage}}}
+
+% ---------- title block ----------
+\makeatletter
+\renewcommand{\maketitle}{%
+  \thispagestyle{plain}%
+  \begin{tikzpicture}[remember picture, overlay]
+    \fill[accent]  (current page.north west) rectangle ([xshift=0.62\paperwidth, yshift=-5mm]current page.north west);
+    \fill[accent2] ([xshift=0.62\paperwidth]current page.north west) rectangle ([xshift=0.86\paperwidth, yshift=-5mm]current page.north west);
+    \fill[accent3] ([xshift=0.86\paperwidth]current page.north west) rectangle ([yshift=-5mm]current page.north east);
+  \end{tikzpicture}%
+  \vspace*{-6mm}%
+  {\sffamily\footnotesize\color{accent2}\bfseries\addfontfeature{LetterSpace=8}DA3408 AIOPS\enspace·\enspace COURSE PROJECT\enspace·\enspace IIT MADRAS\par}%
+  \vspace{10pt}%
+  {\sffamily\fontsize{30}{34}\selectfont\bfseries\color{ink}RoomSense\par}%
+  \vspace{4pt}%
+  {\sffamily\fontsize{17}{21}\selectfont\color{accent}\doctype\par}%
+  \vspace{8pt}%
+  {\sffamily\small\color{muted}\docblurb\par}%
+  \vspace{10pt}%
+  {\color{rule}\rule{\linewidth}{0.6pt}}\par
+  \vspace{2pt}%
+  {\sffamily\small\color{ink}\textbf{Khaja Mohammed}\hfill\color{muted}November 2026\par}%
+  \vspace{14pt}%
+}
+\makeatother
