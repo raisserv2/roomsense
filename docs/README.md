@@ -2,6 +2,7 @@
 
 | # | Document | What it is |
 |---|---|---|
+| 0 | [Project report](00-project-report.md) | The whole project in one document: problem, data, experiments and results, the fair-comparison finding, monitoring, testing, limitations |
 | 1 | [Architecture](01-architecture.md) | The architecture diagram with an explanation of every block, plus pipeline, serving, drift-sequence and deployment diagrams |
 | 2 | [High-Level Design](02-hld.md) | Design choices and the reasons for them |
 | 3 | [Low-Level Design](03-lld.md) | Every API endpoint with input/output specification, modules and classes, metrics, file formats, configuration |

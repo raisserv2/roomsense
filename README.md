@@ -6,6 +6,8 @@ Classifies the state of a hostel room (`at_desk`, `lying_in_bed`, `sitting_on_be
 
 **Demo video:** [watch on Google Drive](https://drive.google.com/file/d/1YcPyV3smMiM-jK5kJkJ4iBxO_-0Pdiks/view?usp=sharing) (about 11 minutes)
 
+**Project report:** [docs/00-project-report.md](docs/00-project-report.md) ([PDF](docs/pdf/00-project-report.pdf))
+
 **Documents** (in [`docs/`](docs/README.md)): [architecture](docs/01-architecture.md) · [high-level design](docs/02-hld.md) · [low-level design with the API specification](docs/03-lld.md) · [test plan](docs/04-test-plan.md) · [test report](docs/05-test-report.md) · [user manual](docs/06-user-manual.md)
 
 All web UIs are reachable only inside the tailnet (Tailscale Serve, HTTPS). Every Docker port is bound to `127.0.0.1`.
