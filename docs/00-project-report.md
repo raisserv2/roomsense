@@ -1,52 +1,54 @@
 # RoomSense: project report
 
+<!-- pdf:skip-start -->
 **Khaja Mohammed** · DA3408 AIOps · IIT Madras · November 2026
+<!-- pdf:skip-end -->
 
-Repository: `github.com/raisserv2/roomsense` · Demo video: linked at the top of the README
+<!-- pdf:abstract-start -->
+**Abstract.** RoomSense classifies the state of a hostel room into six classes from a fixed phone camera sampled every 5 s, and wraps the classifier in a complete, self-hosted machine learning lifecycle: versioned data collection, a reproducible DVC pipeline with Ray preprocessing, MLflow tracking and model registry, ONNX serving, Prometheus and Grafana monitoring, drift detection, alert-driven retraining and one-click rollback. Over 24 days, 56,796 labelled frames were collected in 108 sessions. The final model, a fine-tuned MobileNetV3-Small, reaches 0.518 test macro-F1 and was not promoted over the incumbent. The main finding concerns evaluation rather than modelling: re-splitting a growing dataset placed 62% of a candidate's test frames in the champion's training data, so the promotion gate was redesigned to compare models only on sessions unseen by both.
+<!-- pdf:abstract-end -->
 
-This report tells the story of the project and its results. The detail lives in the five design documents, linked where they matter: [architecture](01-architecture.md), [high-level design](02-hld.md), [low-level design](03-lld.md), [test plan](04-test-plan.md), [test report](05-test-report.md) and [user manual](06-user-manual.md).
+Companion documents: [architecture](01-architecture.md), [high-level design](02-hld.md), [low-level design](03-lld.md), [test plan](04-test-plan.md), [test report](05-test-report.md), [user manual](06-user-manual.md). Source code: `github.com/raisserv2/roomsense`.
 
 ---
 
-## 1. Problem and goal
+## 1. Introduction
 
-RoomSense works out what is happening in a hostel room from a single phone camera, one picture every five seconds. It recognises six states: `at_desk`, `lying_in_bed`, `sitting_on_bed`, `in_room` (moving about), `empty`, and `lights_off`.
+RoomSense infers the state of a hostel room from one fixed phone camera, one frame every 5 s. It distinguishes six classes: `at_desk`, `lying_in_bed`, `sitting_on_bed`, `in_room` (moving about), `empty` and `lights_off`.
 
-The model is the small part. The aim of the project was the full machine learning lifecycle around it, run like a production system: versioned data collection, a reproducible pipeline, experiment tracking, a model registry with a promotion rule, serving, monitoring of every component, drift detection, automatic retraining, and rollback. The course rules and the privacy of the pictures ruled out the cloud, so everything runs on two machines in the room:
+The classifier is deliberately small; the subject of the project is the operational lifecycle around it. No cloud services are used, both for privacy and under the course rules. The system runs on two machines connected by a private Tailscale network, so every interface is reachable only from the owner's devices.
 
-| Machine | Role |
+| Machine | Hardware | Role |
+|---|---|---|
+| **nova** | ThinkPad T460, 8 GB RAM, no GPU, always on | Data collection, model serving, MLflow, monitoring (Docker) |
+| **Legion** | Laptop with an RTX 4060 GPU | Training pipeline |
+
+## 2. System architecture
+
+![System architecture: data collection and serving on nova, training on Legion, joined by Tailscale](diagrams/01-architecture.png)
+
+The system operates as a closed loop:
+
+1. **Collection.** A capture service on nova stores a labelled frame every 5 s during a recording session.
+2. **Versioning.** Each night nova adds the new frames to DVC (Data Version Control), stored on a local drive, and pushes the dataset metadata to GitHub.
+3. **Training.** On Legion, a six-stage DVC pipeline validates, preprocesses, splits, trains, exports to ONNX and registers the model in MLflow.
+4. **Promotion and serving.** A candidate becomes `champion` only if it outperforms the incumbent on frames neither model has seen. The API loads the new champion without a restart.
+5. **Monitoring and retraining.** Prometheus scrapes every component and Grafana displays them. A drift alert raises a retraining request; Legion picks it up and the loop restarts.
+
+Each component is described in the [architecture document](01-architecture.md) and the rationale for each design choice in the [HLD](02-hld.md).
+
+## 3. Dataset
+
+**Collection.** Recording sessions are started and stopped from a phone page, so every frame is labelled at capture time and nothing is stored outside a session. A review tool allows frames to be relabelled or discarded; every change is logged.
+
+| Property | Value |
 |---|---|
-| **nova**, a ThinkPad T460 used as an always-on server (8 GB RAM, no GPU) | Collects pictures, serves the model, runs MLflow and all monitoring, in Docker |
-| **Legion**, a laptop with an RTX 4060 GPU | Runs the training pipeline |
-
-The two are joined by a private Tailscale network. Every web page is reachable only by the owner's devices.
-
-## 2. System overview
-
-![System architecture](diagrams/01-architecture.png)
-
-The loop, in short:
-
-1. A capture service on nova saves a labelled picture every 5 s while the owner records a session.
-2. Every night nova versions the new pictures with DVC (Data Version Control) on a local drive and pushes the dataset fingerprint to GitHub.
-3. On the Legion, a six-stage DVC pipeline checks the data, preprocesses it with Ray, splits it by session, trains, exports to ONNX and registers the model in MLflow.
-4. The model is promoted to `champion` only if it beats the current one on pictures neither has seen. nova's API swaps it in without a restart.
-5. Prometheus scrapes every component and Grafana shows them live. When live pictures drift away from the training data, an alert raises a retrain flag, the Legion picks it up, and the loop starts again.
-
-Block-by-block explanations are in the [architecture document](01-architecture.md). The reasoning behind each choice is in the [HLD](02-hld.md).
-
-## 3. Data
-
-**Collection.** A phone page starts and stops labelled recording sessions, so pictures are labelled as they are taken, and nothing is saved outside a session. A review tool lets bad pictures be relabelled or moved to a trash folder, and every change is logged.
-
-| | |
-|---|---|
-| Pictures | 56,796, from 20 Oct to 12 Nov 2026 |
+| Frames | 56,796, collected 20 Oct to 12 Nov 2026 |
 | Sessions | 108 |
 | Lighting | 37,560 with the tube light on, 19,236 off |
 | Time of day | 32,258 day, 24,538 night |
 
-| Class | Pictures | Sessions |
+| Class | Frames | Sessions |
 |---|---:|---:|
 | empty | 27,170 | 31 |
 | at_desk | 10,291 | 31 |
@@ -55,44 +57,44 @@ Block-by-block explanations are in the [architecture document](01-architecture.m
 | lights_off | 5,207 | 4 |
 | in_room | 865 | 15 |
 
-The classes are unbalanced, and sessions matter more than pictures: pictures five seconds apart are nearly identical, so a class with four sessions (`lights_off`) has far less real variety than its 5,207 pictures suggest.
+The classes are imbalanced, and the session count matters more than the frame count: consecutive frames are nearly identical, so `lights_off`, with four sessions, has far less variety than its 5,207 frames suggest.
 
-**Quality checks.** The `prepare` stage checks every row (the file exists and is not empty, the label and lighting are known, the pair is possible, the timestamp parses, no duplicates). The pipeline fails if more than 5% of rows are bad. On the final dataset, 0 rows were dropped.
+**Validation.** The `prepare` stage checks every row: the file exists and is non-empty, the label and lighting values are known and compatible, the timestamp parses, and there are no duplicates. The pipeline fails if more than 5% of rows are invalid. No rows were dropped from the final dataset.
 
-**Preprocessing.** Session edges are trimmed (walking to and from the phone). Pictures are resized to 224 × 224. Within each session, k-means on image embeddings keeps the picture nearest each cluster centre: 5 to 80 per session. That cut 56,202 pictures to 2,419 representative ones, so long sessions no longer dominate training.
+**Preprocessing.** The start and end of each session (walking to and from the phone) are trimmed, and frames are resized to 224 × 224. Within each session, k-means on image embeddings keeps the frame nearest each cluster centre (5 to 80 per session), reducing 56,202 frames to 2,419 so that long sessions do not dominate training.
 
-**Splitting.** Whole sessions go to train, validation or test (70 / 15 / 15), balanced per class, so the model is never tested on a session it trained on. The final split: 1,696 / 371 / 352 pictures from 54 / 26 / 28 sessions, with every class in every split.
+**Splitting.** Whole sessions are assigned to train, validation and test (70/15/15), stratified by class, so no model is tested on a session it trained on. Final split: 1,696 / 371 / 352 frames from 54 / 26 / 28 sessions, with every class present in every split.
 
-**Privacy.** Pictures stay on the two machines and a backup drive. GitHub holds only the dataset fingerprints. Face blurring was tried and dropped: Haar detectors missed faces in profile and in the dark, and a filter that works only some of the time gives false comfort (see the HLD, section 4.1).
+**Privacy.** Frames remain on the two machines and a backup drive; GitHub stores only dataset hashes. Automatic face blurring was evaluated and rejected because Haar detectors missed faces in profile and in low light (HLD, section 4.1).
 
 ## 4. Model and training
 
-MobileNetV3-Small, pretrained on ImageNet and fine-tuned on the GPU: first the classifier head with the backbone frozen, then the whole network, with early stopping on validation macro-F1.
+The classifier is MobileNetV3-Small pretrained on ImageNet, fine-tuned in two phases (classifier head with a frozen backbone, then the full network), with early stopping on validation macro-F1.
 
-- **No flips or crops.** The desk is at the right edge of the picture and the bed at the left; position is the signal. Only colour jitter is used.
-- **Balanced sampling and label smoothing** against the class imbalance and overconfidence.
-- **Temperature calibration** on the validation set, so that confidence means something in the UI and the alerts.
-- **Export to ONNX** with the temperature built in. The exported model must match PyTorch within 0.001 before it can be registered (final run: largest difference 5.6 × 10⁻⁶).
+- **No flips or crops.** The desk is at the right of the frame and the bed at the left, so position carries the signal. Only colour jitter is applied.
+- **Balanced sampling and label smoothing** to counter class imbalance and overconfidence.
+- **Temperature scaling** fitted on the validation set, so that reported confidences are meaningful in the interface and in alerts.
+- **ONNX export** with the temperature included. Registration requires the ONNX output to match PyTorch within 0.001; the final run's largest difference was 5.6 × 10⁻⁶.
 
-Every run is logged to MLflow with its settings, per-epoch curves, per-class scores, the confusion matrix and calibration figures, and tagged with its Git commit and DVC data version.
+Each run logs its parameters, per-epoch curves, per-class scores, confusion matrix and calibration plots to MLflow, tagged with the Git commit and DVC data version.
 
-## 5. Experiments and results
+## 5. Results
 
 ### 5.1 Model versions
 
-| Version | Date | Data | Own test macro-F1 | Outcome |
+| Version | Date | Data | Test macro-F1 | Outcome |
 |---|---|---|---:|---|
-| v1 | 28 Oct | 5 classes, 857 training pictures | 0.615 | First champion. Heavily skewed toward `at_desk`; 99% confident when wrong. |
-| **v2** | early Nov | 6 classes, ~27k raw pictures; training v2.1 (balanced sampling, label smoothing, calibration) | 0.548 | **Champion, still serving.** The test split had no `lights_off` session, and the metric at the time counted that as an F1 of 0; over the five classes present it is about 0.66. |
-| v3 | 12 Nov | ~57k raw pictures (twice the data) | 0.652 | Not promoted: 0.652 against v2's 0.731 on the same test split. That comparison was unfair (section 6). |
-| v4 | 12 Nov | Same model as v3, re-registered under the fair rule | (0.652) | Not promoted: 0.488 against v2's 0.519 on 129 pictures unseen by both. |
-| v5 | 14 Nov | 56,796 raw pictures (final run) | 0.518 | Not promoted: 0.432 against v2's 0.547 on 129 pictures unseen by both. |
+| v1 | 28 Oct | 5 classes, 857 training frames | 0.615 | First champion; biased toward `at_desk` and 99% confident when wrong |
+| **v2** | early Nov | 6 classes, ~27k raw frames; balanced sampling, label smoothing, calibration | 0.548 | **Current champion.** No `lights_off` session in its test split; over the five classes present, about 0.66 |
+| v3 | 12 Nov | ~57k raw frames | 0.652 | Not promoted: 0.652 vs 0.731 on a shared split, later shown to be unfair (section 6) |
+| v4 | 12 Nov | v3 re-registered under the fair rule | (0.652) | Not promoted: 0.488 vs 0.519 on 129 frames unseen by both |
+| v5 | 14 Nov | 56,796 raw frames (final run) | 0.518 | Not promoted: 0.432 vs 0.547 on 129 frames unseen by both |
 
-Each version's score is on its own test split. Because the split changes as data grows, the scores across rows are not directly comparable: the promotion decisions in the last column are the comparable numbers.
+Each score is measured on that version's own test split. Because the split changes as the dataset grows, scores in different rows are not directly comparable; the comparisons in the last column are.
 
-### 5.2 The final model (v5) per class
+### 5.2 Final model (v5)
 
-| Class | F1 | Test pictures |
+| Class | F1 | Test frames |
 |---|---:|---:|
 | sitting_on_bed | 0.81 | 43 |
 | at_desk | 0.79 | 142 |
@@ -100,81 +102,85 @@ Each version's score is on its own test split. Because the split changes as data
 | in_room | 0.32 | 25 |
 | empty | 0.25 | 90 |
 | lying_in_bed | 0.25 | 45 |
-| **macro average** | **0.52** | 352 |
+| **Macro average** | **0.52** | 352 |
 
-![Confusion matrix of v5](img/report-confusion-v5.png)
+![Confusion matrix of v5 on its 352-frame test split](img/report-confusion-v5.png)
 
-The confusion matrix shows two systematic errors:
+Two systematic errors dominate:
 
-- **An empty room is usually called `at_desk`** (59 of 90). With nobody in the picture, the desk area dominates, and `at_desk` is the class the model has seen most. Almost every true `at_desk` picture is right (141 of 142), which is the other side of the same bias.
-- **`lying_in_bed` is usually called `in_room`** (28 of 45). Lying under a blanket changes the bed's outline only slightly from above.
+- **`empty` is predicted as `at_desk`** in 59 of 90 cases. With no person present the desk region dominates the frame, and `at_desk` is the most frequent occupied class. The same bias explains the near-perfect `at_desk` recall (141 of 142).
+- **`lying_in_bed` is predicted as `in_room`** in 28 of 45 cases. A person under a blanket changes the outline of the bed only slightly when seen from above.
 
-Both point to the data rather than the network: more varied `empty` and `lying_in_bed` sessions (different clothes, blanket, desk clutter, time of day) would help more than a larger model.
+Both errors point to limited data variety rather than model capacity: more varied `empty` and `lying_in_bed` sessions (clothing, bedding, desk clutter, time of day) are likely to help more than a larger network.
 
-**Calibration did not help v5.** The temperature fitted on the 371 validation pictures was 1.84, which made the model underconfident on test: expected calibration error rose from 0.081 to 0.160. With a validation set this small, calibration should be fitted with a cross-check or skipped when it does not improve validation ECE.
+**Calibration.** The temperature fitted on 371 validation frames (T = 1.84) made v5 underconfident on test: expected calibration error (ECE) rose from 0.081 to 0.160. With a validation set this small, temperature scaling should be cross-validated, or kept only when it lowers validation ECE.
 
-### 5.3 Pipeline speed and throughput
+### 5.3 Pipeline performance
 
-![Stage durations](img/report-stage-times.png)
+![Duration of each pipeline stage in the final run](img/report-stage-times.png)
 
 | Measure | Final run |
 |---|---|
-| Whole pipeline, 56,796 pictures | 121 s |
-| Ray resize step | 6,573 pictures/s (24 CPU cores) |
-| Ray k-means de-duplication | 5,541 pictures/s |
-| Preprocess end to end | 1,445 pictures/s |
-| Training | 1,248 images/s on the RTX 4060 |
-| Prediction on nova's CPU (2 threads) | 1.35 ms per picture (p95) |
+| End-to-end pipeline, 56,796 frames | 121 s |
+| Ray resize | 6,573 frames/s (24 CPU cores) |
+| Ray k-means de-duplication | 5,541 frames/s |
+| Preprocessing, end to end | 1,445 frames/s |
+| Training throughput | 1,248 images/s (RTX 4060) |
+| Inference latency on nova (2 CPU threads) | 1.35 ms per frame (p95) |
 | ONNX model size | 6.1 MB |
 
-DVC reruns only the stages whose inputs changed: a run with nothing new takes a few seconds, all stages taken from the cache.
+DVC reruns only stages whose inputs changed; a run with no new data completes in a few seconds from cache.
 
-## 6. Key finding: a fair promotion rule
+## 6. Fair model promotion
 
-The promotion rule compared the new model with the champion "on the same test split". When the dataset doubled, v3 lost to v2 by a wide margin (0.652 against 0.731), which made no sense for a model trained on twice the data.
+The original gate compared a candidate with the champion on the candidate's test split. After the dataset doubled, v3 lost to v2 by a wide margin (0.652 vs 0.731), which was implausible for a model trained on twice the data.
 
-The cause: the splitter reassigns sessions whenever the dataset grows. An analysis of v3's test split showed that **209 of its 338 test pictures (14 of 22 sessions) came from sessions v2 had trained on.** v2 was being tested largely on its own training data.
+The splitter reassigns sessions whenever the dataset grows. Of v3's 338 test frames, **209 (14 of 22 sessions) came from sessions in v2's training set**, so v2 was largely being evaluated on data it had trained on.
 
-The fix (in `registry.fair_comparison_set` and the register stage):
+The revised gate (`registry.fair_comparison_set` and the register stage) works as follows:
 
 - Every registered model stores its split in MLflow.
-- A candidate is compared with the champion **only on test sessions the champion never trained or validated on**, which are unseen by both.
-- With fewer than 50 such pictures, the rule declines to promote and says why.
+- A candidate is compared with the champion **only on test sessions the champion never trained or validated on**, which are therefore unseen by both.
+- If fewer than 50 such frames exist, promotion is declined with an explicit reason.
 
-Under the fair rule, v2's score on the same candidate data fell from 0.731 to 0.519. v3 still did not beat it (0.488), and neither did v5 (0.432 against 0.547), so v2 remains the champion. On 129 pictures, mostly one session per class, those differences are within noise; the rule is correct, but the test set is too small to separate the models. The remaining fix is a "sticky" split that never moves an old session (section 9).
+Under the fair gate, v2's score on the same candidate data fell from 0.731 to 0.519. Neither v3 (0.488) nor v5 (0.432 vs 0.547) surpassed it, so v2 remains the champion. With 129 frames, mostly one session per class, these differences are within noise: the gate is correct, but the shared test set is too small to separate the models. A split that never reassigns existing sessions would address this (section 9).
 
-## 7. Serving, monitoring, drift and retraining
+## 7. Deployment and operations
 
-**Serving.** A FastAPI service on nova loads `models:/roomsense@champion` with ONNX Runtime, classifies the camera every 5 s, and checks the registry every 60 s; moving the alias is the whole deployment, and rolling back is moving it back (one click on the Pipeline page). The web frontend is a separate container that reaches the API only through REST, at an address set in configuration. The full API specification is in the [LLD](03-lld.md).
+**Serving.** A FastAPI service on nova loads `models:/roomsense@champion` with ONNX Runtime, classifies the current frame every 5 s and polls the registry every 60 s. Deployment consists of moving the `champion` alias, and rollback of moving it back, which the Pipeline page exposes as a single action. The web frontend runs in a separate container and reaches the API only over REST at a configurable address. The API is specified in the [LLD](03-lld.md).
 
-**Monitoring.** Prometheus scrapes eight jobs every 15 s: the API, the capture service, the frontend, the host, every container, and Prometheus, Alertmanager and Grafana themselves. A 42-panel Grafana dashboard covers the model, the training pipeline, data collection, and component health. Thirteen alert rules reach the owner's phone through Telegram.
+**Monitoring.** Prometheus scrapes eight jobs every 15 s: the API, the capture service, the frontend, the host, all containers, and Prometheus, Alertmanager and Grafana themselves. A 42-panel Grafana dashboard covers the model, the pipeline, data collection and component health. Thirteen alert rules notify the owner through Telegram.
 
-**Drift.** The API compares the brightness of the last 120 pictures with the training pictures. The alert signal is the share of recent pictures in brightness ranges the training data almost never had: near 0 normally, near 1 when the lighting changes. The Population Stability Index is shown too, but proved too noisy on a 120-picture window to alert on. A second trigger compares live predictions with the label of a running recording session.
+**Drift detection.** The API compares the brightness of the last 120 frames with the training distribution. The alert signal is the share of recent frames in brightness ranges the training data rarely contains: close to 0 normally and close to 1 after a lighting change. The Population Stability Index is also reported but was too noisy on a 120-frame window to alert on. A second check compares live predictions with the label of an active recording session.
 
-**Retraining.** A drift or accuracy alert calls the API's webhook, which raises a retrain flag saved on disk. The Legion polls the flag, pulls the newest data, reruns the pipeline, pushes the results and acknowledges. The demo video shows a real request raised by the live-accuracy alert while the Legion was off, waiting until the Legion picked it up.
+**Retraining.** A drift or accuracy alert calls the API's webhook, which persists a retraining request. Legion polls for it, pulls the latest data, reruns the pipeline, publishes the results and acknowledges the request. The demo video shows a request raised by the live-accuracy alert while Legion was offline and served once it came back.
 
-**Pipeline console.** A Pipeline page in the web UI shows the pipeline as a diagram with each stage's status, duration and throughput, data collection totals, every successful and failed run, the model versions, and an activity log, with buttons to request retraining, reload and roll back.
+**Pipeline console.** The Pipeline page shows the DVC graph with each stage's status, duration and throughput, data collection totals, the history of successful and failed runs, registered model versions and an activity log, with actions to request retraining, reload the model and roll back.
 
 ## 8. Testing
 
-| | |
+| Area | Result |
 |---|---|
-| Automated tests | 91, all passing (unit, API, configuration) |
-| Code style | `ruff`, PEP 8: no violations |
-| Pipeline integration | Fresh run, fully cached run, and a forced failure, each recorded correctly |
-| Acceptance criteria | 13 of 14 measured criteria met |
+| Automated tests | 91 passing (unit, API, configuration) |
+| Code style | `ruff` (PEP 8): no violations |
+| Pipeline integration | Fresh run, fully cached run and forced failure, each recorded correctly |
+| Acceptance criteria | 13 of 14 met |
 
-The one criterion not met is AC-3, test macro-F1 of the latest trained model ≥ 0.60: v5 reached 0.518. The threshold was kept rather than lowered after the result; sections 5 and 6 explain the cause. The test plan lists every case, and the generated test report gives each result.
+The unmet criterion is AC-3, test macro-F1 of the latest model ≥ 0.60; v5 reached 0.518. The threshold was fixed in advance and not lowered after the result; sections 5 and 6 explain the shortfall. Every test case is listed in the test plan and every result in the generated test report.
 
 ## 9. Limitations and future work
 
-- **Sticky split.** Keep each session in the split it was first assigned to, so test sessions stay unseen by every later model and comparisons grow more reliable over time.
-- **More, more varied sessions** for `lights_off` (4 sessions), `lying_in_bed` and `empty`, which are the classes that limit macro-F1.
-- **Calibration check.** Keep the temperature only if it improves validation calibration error.
-- **Explainability.** Grad-CAM heat maps of what the network looks at would show directly whether `empty` is being judged from the desk.
-- **Drift beyond brightness.** Distance in image-embedding space would catch changes that brightness cannot, such as furniture moving.
-- **Scale.** PostgreSQL behind MLflow, object storage for DVC, and a canary step before promotion if the system had more users.
+- **Stable split.** Keep each session in the split it was first assigned to, so that test sessions stay unseen by all later models and comparisons become more reliable as data accumulates.
+- **More varied sessions** for `lights_off` (four sessions), `lying_in_bed` and `empty`, the classes that limit macro-F1.
+- **Conditional calibration.** Keep the fitted temperature only if it lowers validation ECE.
+- **Explainability.** Grad-CAM saliency maps would show directly whether `empty` is being judged from the desk region.
+- **Richer drift signals.** Distances in image-embedding space would detect changes that brightness cannot, such as moved furniture.
+- **Scaling.** PostgreSQL behind MLflow, object storage for DVC and a canary stage before promotion for a multi-user deployment.
 
-## 10. Use of AI
+## 10. Conclusion
 
-Claude (Anthropic) was used as a coding assistant: drafting code, tests, documentation and diagrams. The project idea, the design choices, the hardware and network setup, the data collection and labelling, running the training and the deployment, and checking every result are my own work.
+RoomSense runs the full lifecycle of a vision model on two personal machines with no cloud services: 56,796 frames collected and versioned, a 121-second reproducible pipeline, gated promotion, live monitoring with 13 alerts, and drift-triggered retraining. Model quality is limited by session variety rather than architecture. The most consequential result is methodological: when a dataset grows, the comparison between models must be restricted to data unseen by both, or the promotion gate rewards memorisation.
+
+## Use of AI
+
+Claude (Anthropic) was used as a coding assistant for drafting code, tests, documentation and diagrams. The project idea, design decisions, hardware and network setup, data collection and labelling, training and deployment runs, and the verification of every result are my own work.
